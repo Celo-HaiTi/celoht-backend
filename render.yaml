@@ -1,0 +1,30 @@
+services:
+  - type: web
+    name: celoht-backend
+    runtime: node
+    plan: free
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/v1/health
+    autoDeploy: true
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: CELO_CHAIN_ID
+        value: "11142220"
+      - key: CELO_RPC_URL
+        sync: false
+      - key: AUTH_SESSION_SECRET
+        sync: false
+      - key: AUTH_NONCE_TTL_SECONDS
+        value: "300"
+      - key: AUTH_SESSION_TTL_SECONDS
+        value: "86400"
+      - key: CELOHT_ALLOWED_ORIGIN
+        sync: false
