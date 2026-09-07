@@ -1,0 +1,16 @@
+{
+  "extends": ["next/core-web-vitals", "plugin:@typescript-eslint/recommended"],
+  "parser": "@typescript-eslint/parser",
+  "rules": {
+    "@typescript-eslint/no-unused-vars": "error",
+    "@typescript-eslint/no-explicit-any": "error",
+    "no-restricted-properties": [
+      "error",
+      {
+        "object": "process.env",
+        "property": "SUPABASE_SERVICE_ROLE_KEY",
+        "message": "Never reference the service role key outside src/lib/supabase/server.ts"
+      }
+    ]
+  }
+}

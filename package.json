@@ -1,0 +1,36 @@
+{
+  "name": "celoht-backend",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Official CeloHT application backend: API, wallet authentication, authorization, admin workflows.",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint . --max-warnings=0",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.4",
+    "next": "14.2.15",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "viem": "^2.21.19",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.10",
+    "@types/react": "^18.3.3",
+    "@typescript-eslint/eslint-plugin": "^7.16.0",
+    "@typescript-eslint/parser": "^7.16.0",
+    "eslint": "^8.57.0",
+    "eslint-config-next": "14.2.15",
+    "typescript": "^5.5.3",
+    "vitest": "^2.1.1"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
