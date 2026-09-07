@@ -4,3 +4,4 @@ node_modules/
 .env.local
 coverage/
 *.log
+*.tsbuildinfo

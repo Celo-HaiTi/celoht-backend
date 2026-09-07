@@ -5,7 +5,7 @@ import { getServiceRoleClient } from "@/lib/supabase/server";
 import { AgentStatusDecisionSchema } from "@/schemas/agents";
 import { writeAuditLog, type AuditAction } from "@/lib/audit";
 
-const ACTION_BY_DECISION: Record<string, AuditAction> = {
+const ACTION_BY_DECISION: Record<"approved" | "suspended" | "rejected", AuditAction> = {
   approved: "agent_approval",
   suspended: "agent_suspension",
   rejected: "agent_rejection",

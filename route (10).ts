@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { apiError, apiOk, withApiErrorHandling } from "@/lib/errors";
 import { VerifyRequestSchema } from "@/schemas/auth";
-import { consumeChallenge, ChallengeError } from "@/lib/auth/nonce";
+import { consumeChallenge, getChallenge, ChallengeError } from "@/lib/auth/nonce";
 import { verifyWalletSignature, issueSessionToken } from "@/lib/auth/session";
 import { getServiceRoleClient } from "@/lib/supabase/server";
 import { SESSION_COOKIE_NAME } from "@/lib/auth/authorization";
@@ -23,15 +23,17 @@ export async function POST(req: NextRequest) {
       return apiError("rate_limited", "Too many verification attempts for this wallet.");
     }
 
-    const message = [
-      "CeloHT wants you to sign in with your wallet.",
-      `Wallet: ${body.walletAddress}`,
-      `Nonce: ${body.nonce}`,
-    ].join("\n");
+    let challenge;
+    try {
+      challenge = await getChallenge(wallet, body.nonce);
+    } catch (err) {
+      if (err instanceof ChallengeError) return apiError("unauthenticated", err.message);
+      throw err;
+    }
 
     const validSignature = await verifyWalletSignature({
       walletAddress: body.walletAddress as `0x${string}`,
-      message,
+      message: challenge.message,
       signature: body.signature as `0x${string}`,
     }).catch(() => false);
 
@@ -74,7 +76,7 @@ export async function POST(req: NextRequest) {
     const res = apiOk({ profileId, walletAddress: wallet });
     res.cookies.set(SESSION_COOKIE_NAME, token, {
       httpOnly: true,
-      secure: true,
+      secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
       path: "/",
       maxAge: Number(process.env.AUTH_SESSION_TTL_SECONDS ?? 86400),

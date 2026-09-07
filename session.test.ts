@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import { issueSessionToken, verifySessionToken, SessionError } from "@/lib/auth/session";
 import { __resetConfigCacheForTests } from "@/lib/config";
 
@@ -33,9 +33,12 @@ describe("session tokens", () => {
   });
 
   it("rejects an expired token", () => {
-    process.env.AUTH_SESSION_TTL_SECONDS = "-1";
+    process.env.AUTH_SESSION_TTL_SECONDS = "1";
     __resetConfigCacheForTests();
+    vi.useFakeTimers();
     const token = issueSessionToken("profile-1", "0xabc");
+    vi.advanceTimersByTime(2_000);
     expect(() => verifySessionToken(token)).toThrow(SessionError);
+    vi.useRealTimers();
   });
 });

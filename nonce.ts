@@ -39,10 +39,33 @@ export interface Challenge {
 function buildMessage(walletAddress: string, nonce: string, expiresAt: Date): string {
   return [
     "CeloHT wants you to sign in with your wallet.",
-    `Wallet: ${walletAddress}`,
+    `Wallet: ${walletAddress.toLowerCase()}`,
     `Nonce: ${nonce}`,
     `Expires: ${expiresAt.toISOString()}`,
   ].join("\n");
+}
+
+export async function getChallenge(walletAddress: string, nonce: string): Promise<Challenge> {
+  const supabase = getServiceRoleClient();
+  const { data, error } = await supabase
+    .from("auth_challenges")
+    .select("nonce, expires_at, used_at")
+    .eq("wallet_address", walletAddress.toLowerCase())
+    .eq("nonce", nonce)
+    .maybeSingle();
+
+  if (error) throw error;
+  if (!data || data.used_at) throw new ChallengeError("Unknown or already-consumed challenge.");
+
+  const expiresAt = new Date(data.expires_at);
+  if (expiresAt.getTime() < Date.now()) throw new ChallengeError("Challenge has expired.");
+
+  return {
+    walletAddress: walletAddress.toLowerCase(),
+    nonce: data.nonce,
+    message: buildMessage(walletAddress, data.nonce, expiresAt),
+    expiresAt,
+  };
 }
 
 export async function issueChallenge(walletAddress: string): Promise<Challenge> {
@@ -89,13 +112,13 @@ export async function consumeChallenge(walletAddress: string, nonce: string): Pr
   // Mark used. A unique partial index / check in the migration should make
   // double-consumption impossible even under a race; this update is scoped
   // to used_at IS NULL to enforce it here too.
-  const { error: updateError, count } = await supabase
+  const { data: updated, error: updateError } = await supabase
     .from("auth_challenges")
     .update({ used_at: new Date().toISOString() })
     .eq("id", data.id)
     .is("used_at", null)
-    .select("id", { count: "exact" });
+    .select("id");
 
   if (updateError) throw updateError;
-  if (!count) throw new ChallengeError("Challenge was already consumed concurrently.");
+  if (!updated?.length) throw new ChallengeError("Challenge was already consumed concurrently.");
 }

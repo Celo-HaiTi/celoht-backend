@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { randomUUID } from "node:crypto";
 
 /**
  * Standard, non-leaky API error envelope.
@@ -28,9 +29,10 @@ const STATUS_BY_CODE: Record<ApiErrorCode, number> = {
 };
 
 export function apiError(code: ApiErrorCode, message: string, details?: unknown) {
+  const requestId = randomUUID();
   return NextResponse.json(
-    { error: { code, message, details: details ?? null } },
-    { status: STATUS_BY_CODE[code] }
+    { error: { code, message, details: details ?? null, requestId } },
+    { status: STATUS_BY_CODE[code], headers: { "x-request-id": requestId } }
   );
 }
 

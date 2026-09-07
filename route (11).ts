@@ -1,4 +1,3 @@
-import { NextRequest } from "next/server";
 import { apiOk, withApiErrorHandling } from "@/lib/errors";
 import { getServiceRoleClient } from "@/lib/supabase/server";
 

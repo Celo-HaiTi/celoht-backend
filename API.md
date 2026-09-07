@@ -3,7 +3,9 @@
 Base path: `/api/v1`
 
 All responses are `{ "data": ... }` on success or
-`{ "error": { "code", "message", "details" } }` on failure.
+`{ "error": { "code", "message", "details", "requestId" } }` on failure.
+Errors also return the same `requestId` in the `x-request-id` response header.
+`limit` defaults to 20 and is capped at 100; `offset` defaults to 0.
 
 ## Auth
 | Method | Path | Auth | Description |
@@ -55,3 +57,6 @@ All responses are `{ "data": ... }` on success or
 | Method | Path | Auth | Description |
 |---|---|---|---|
 | GET | `/health` | none | 200 only if config valid and DB reachable; otherwise 503 |
+
+The backend reads indexer-owned blockchain tables but never writes them. It
+does not expose transaction-signing or treasury private-key operations.
