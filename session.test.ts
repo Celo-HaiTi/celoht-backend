@@ -15,10 +15,10 @@ beforeEach(() => {
 
 describe("session tokens", () => {
   it("round-trips a valid token", () => {
-    const token = issueSessionToken("profile-1", "0xabc");
+    const token = issueSessionToken("profile-1", `0x${"a".repeat(40)}`);
     const payload = verifySessionToken(token);
     expect(payload.sub).toBe("profile-1");
-    expect(payload.wallet).toBe("0xabc");
+    expect(payload.wallet).toBe(`0x${"a".repeat(40)}`);
   });
 
   it("rejects a tampered payload (signature mismatch)", () => {
@@ -30,6 +30,13 @@ describe("session tokens", () => {
 
   it("rejects a malformed token", () => {
     expect(() => verifySessionToken("not-a-real-token")).toThrow(SessionError);
+  });
+
+  it("rejects a token with an invalid signed payload", () => {
+    const token = issueSessionToken("profile-1", "0xabc");
+    const [, signature] = token.split(".");
+    const invalidPayload = Buffer.from(JSON.stringify({ sub: "profile-1" })).toString("base64url");
+    expect(() => verifySessionToken(`${invalidPayload}.${signature}`)).toThrow(SessionError);
   });
 
   it("rejects an expired token", () => {

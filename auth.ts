@@ -10,6 +10,8 @@ export const NonceRequestSchema = z.object({
 
 export const VerifyRequestSchema = z.object({
   walletAddress: WalletAddressSchema,
-  nonce: z.string().min(32),
-  signature: z.string().regex(/^0x[0-9a-fA-F]+$/, "Must be a valid hex signature"),
+  nonce: z.string().regex(/^[0-9a-f]{64}$/, "Must be a valid challenge nonce"),
+  signature: z
+    .string()
+    .regex(/^0x[0-9a-fA-F]{130}$/, "Must be a 65-byte hex signature"),
 });

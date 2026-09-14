@@ -1,6 +1,7 @@
 import "server-only";
 import { verifyMessage } from "viem";
 import { createHmac, timingSafeEqual } from "node:crypto";
+import { z } from "zod";
 import { getConfig } from "@/lib/config";
 
 /**
@@ -26,6 +27,13 @@ interface SessionPayload {
   iat: number;
   exp: number;
 }
+
+const SessionPayloadSchema = z.object({
+  sub: z.string().min(1),
+  wallet: z.string().regex(/^0x[0-9a-f]{40}$/),
+  iat: z.number().int().nonnegative(),
+  exp: z.number().int().positive(),
+});
 
 function sign(payload: string, secret: string): string {
   return createHmac("sha256", secret).update(payload).digest("base64url");
@@ -53,7 +61,9 @@ export class SessionError extends Error {}
 
 export function verifySessionToken(token: string): SessionPayload {
   const config = getConfig();
-  const [encoded, sig] = token.split(".");
+  const parts = token.split(".");
+  if (parts.length !== 2) throw new SessionError("Malformed session token.");
+  const [encoded, sig] = parts;
   if (!encoded || !sig) throw new SessionError("Malformed session token.");
 
   const expectedSig = sign(encoded, config.AUTH_SESSION_SECRET);
@@ -63,7 +73,12 @@ export function verifySessionToken(token: string): SessionPayload {
     throw new SessionError("Invalid session signature.");
   }
 
-  const payload = JSON.parse(Buffer.from(encoded, "base64url").toString("utf8")) as SessionPayload;
+  let payload: SessionPayload;
+  try {
+    payload = SessionPayloadSchema.parse(JSON.parse(Buffer.from(encoded, "base64url").toString("utf8")));
+  } catch {
+    throw new SessionError("Malformed session payload.");
+  }
   if (payload.exp < Math.floor(Date.now() / 1000)) {
     throw new SessionError("Session has expired.");
   }

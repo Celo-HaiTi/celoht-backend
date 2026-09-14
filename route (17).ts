@@ -23,7 +23,12 @@ export async function GET() {
       return apiError("service_unavailable", "Database is unreachable.");
     }
 
-    await supabase.from("system_health").insert({ component: "backend", status: "healthy", details: {} });
+    const { error: healthWriteError } = await supabase
+      .from("system_health")
+      .insert({ component: "backend", status: "healthy", details: {} });
+    if (healthWriteError) {
+      return apiError("service_unavailable", "Health status could not be persisted.");
+    }
 
     return apiOk({ status: "healthy", timestamp: new Date().toISOString() });
   });

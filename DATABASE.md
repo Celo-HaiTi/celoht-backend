@@ -1,16 +1,20 @@
 # DATABASE.md (backend perspective)
 
-This repository does not define the schema — that lives in `celoht-supabase`.
-This document covers only what's backend-specific.
+This repository does not define the shared schema. The authoritative schema
+lives in `Celo-HaiTi/celoht-supabase`; this document covers the backend's
+database contract and ownership boundary.
 
 ## Backend-internal table
-This backend introduces one table not present in `celoht-supabase`, since it
-is purely an authentication implementation detail rather than application
-data: `auth_challenges` (nonce storage for wallet sign-in). Add it via a
-migration in `celoht-supabase` before deploying, using the schema documented
-in `src/lib/auth/nonce.ts`, with RLS fully closed to any non-service-role
-access.
+The canonical `celoht-supabase/0013_auth_challenges.sql` migration defines
+`auth_challenges` for wallet sign-in. It is backend-owned data deployed by the
+Supabase repository, with lower-case EVM address and 32-byte nonce constraints,
+unique challenge identifiers, expiry ordering, and deny-all RLS for client
+roles. Do not create a second migration in this repository.
 
 ## Tables this backend reads/writes
-See `celoht-supabase/docs/OWNERSHIP.md` — this backend owns every table
+See `celoht-supabase/OWNERSHIP.md` — this backend owns every table
 marked BACKEND OWNED and reads (never writes) tables marked INDEXER OWNED.
+
+The governance workflow tables are owned and migrated by
+`celoht-governance/migrations/0013_governance_workflow.sql`; this backend does
+not currently expose governance mutation or execution endpoints.

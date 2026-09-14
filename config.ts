@@ -14,8 +14,14 @@ const ConfigSchema = z.object({
   SUPABASE_URL: z.string().url(),
   SUPABASE_ANON_KEY: z.string().min(1),
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),
+  CELO_NETWORK: z.literal("celoSepolia").default("celoSepolia"),
   CELO_CHAIN_ID: z.coerce.number().int().positive(),
   CELO_RPC_URL: z.string().url(),
+  CELO_CONFIRMATIONS: z.coerce.number().int().nonnegative().default(1),
+  CELO_BACKFILL_BLOCKS: z.coerce.number().int().nonnegative().default(0),
+  CELO_POLL_INTERVAL_MS: z.coerce.number().int().positive().default(10_000),
+  CELO_RPC_RETRIES: z.coerce.number().int().nonnegative().default(3),
+  CELO_RPC_TIMEOUT_MS: z.coerce.number().int().positive().default(5_000),
   AUTH_SESSION_SECRET: z.string().min(32, "AUTH_SESSION_SECRET must be at least 32 characters"),
   AUTH_NONCE_TTL_SECONDS: z.coerce.number().int().positive().default(300),
   AUTH_SESSION_TTL_SECONDS: z.coerce.number().int().positive().default(86400),
@@ -56,6 +62,10 @@ export function getConfig(): Config {
       `CELO_CHAIN_ID=${parsed.data.CELO_CHAIN_ID} is not an officially configured CeloHT network. ` +
         `Refusing to start against an unconfigured chain (fail closed).`
     );
+  }
+
+  if (parsed.data.CELO_CHAIN_ID !== 11142220) {
+    throw new ConfigurationError("Celo Sepolia requires CELO_CHAIN_ID=11142220.");
   }
 
   cached = parsed.data;

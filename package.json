@@ -11,6 +11,8 @@
     "lint": "eslint . --max-warnings=0",
     "test": "vitest run",
     "test:watch": "vitest",
+    "integration": "npm run smoke",
+    "smoke": "node scripts/smoke.mjs",
     "audit": "npm audit --omit=dev --audit-level=high"
   },
   "dependencies": {

@@ -10,7 +10,7 @@ Backend
 
 ## Status
 
-READY FOR TESTING
+NOT READY
 
 ## What Works
 
@@ -20,13 +20,15 @@ READY FOR TESTING
 - Fail-closed configuration handling is implemented.
 - Standardized API error handling and health endpoint are implemented.
 - Admin/audit/auth/profile/agents/progress/reforestation/routes are present and build successfully.
+- Canonical Supabase, indexer, governance, and contract repositories are publicly available and their relevant artifacts were inspected.
 - Unit tests covering configuration, auth/session, authorization, and rate-limiting behavior pass.
 
 ## What Was Changed
 
-- Created `AUDIT.md` summarizing architecture, existing functionality, security posture, blockers, and current status.
-- Created `PRODUCTION_READINESS.md` summarizing verified status, blockers, and evidence.
-- This repository was audited without making destructive changes to working functionality.
+- Hardened wallet request validation and signed session claim validation.
+- Corrected health readiness so failed health snapshot persistence returns `503`.
+- Added focused regression tests for malformed wallet, nonce, signature, and session payload input.
+- Added `OPERATIONAL_READINESS.md` with the required component matrix and external-audit boundary.
 
 ## Tests
 
@@ -56,11 +58,11 @@ Verified repository configuration:
 - `DEPLOYMENT.md` and `ENVIRONMENT.md` define environment variables and startup sequence.
 - `GET /api/v1/health` returns `503` when configuration or database dependencies are unavailable.
 
-Live deployment status remains unverified because live environment values and external CeloHT dependencies are not present in this workspace.
+Live deployment status remains unverified because deployment credentials and a disposable Supabase project are not present in this workspace.
 
 ## External Dependencies
 
-The following external dependencies are required for full production verification, but were not present in this workspace:
+The following external dependencies are required for full production verification:
 
 - `celoht-supabase`
 - `celoht-indexer`
@@ -68,34 +70,37 @@ The following external dependencies are required for full production verificatio
 - `celoht-governance`
 - `celoht-smart-contracts`
 
+Their canonical artifacts were inspected: Supabase `0013_auth_challenges.sql`,
+governance `0013_governance_workflow.sql`, and matching Celo Sepolia deployment
+manifests from the indexer and smart-contract repositories.
+
 ## P0
 
-- `BLOCKED — VERIFICATION REQUIRED`: Canonical external CeloHT schemas, contract addresses, ABIs, and deployment metadata are not present in this workspace.
-- `BLOCKED — VERIFICATION REQUIRED`: Live Supabase and RPC credentials / deployments are not present in this workspace.
+- `BLOCKED — LIVE VERIFICATION REQUIRED`: No disposable/live Supabase project or RPC credentials are available for authenticated, RLS, and indexer-backed smoke tests.
+- `NEEDS CONFIGURATION`: The shared Redis REST limiter is implemented, but its live endpoint and token are not available in this workspace.
 
 ## P1
 
-- In-memory rate limiting is not production-safe for multi-instance deployments.
 - Live end-to-end replay/RLS/auth integration tests are not present in this workspace.
 
 ## P2
 
-- Add production-grade shared rate limiting (for example, Redis-backed shared store).
+- Configure and verify the production-grade shared rate-limit store.
 - Add end-to-end tests against a disposable Supabase project.
 - Add explicit production observability and alerting runbooks.
 
 ## Remaining Blockers
 
 ### WHAT IS MISSING
-- Verified canonical external repositories and live environment.
+- Live shared Redis, disposable Supabase, and Celo Sepolia credentials for integration verification.
 
 ### WHY IT MATTERS
-- The backend cannot be fully verified as the production boundary without authoritative schema, governance, and deployment contracts.
+- The backend cannot be certified as operational without a shared rate-limit store and live verification of database, RPC, and indexer boundaries.
 
 ### WHAT IS REQUIRED
-- Make available the sibling CeloHT repositories or their verified deployment metadata.
-- Provide live production environment values in the deployment platform.
-- Run end-to-end auth/RLS/replay tests against a disposable Supabase project and verified chain configuration.
+- Configure a production shared rate-limit store.
+- Provide live or disposable environment values.
+- Run end-to-end auth/RLS/replay/indexer tests against the canonical Supabase project and Celo Sepolia deployment.
 
 ## Evidence
 
@@ -105,5 +110,6 @@ The following external dependencies are required for full production verificatio
 - `authorization.ts` enforces server-side role checks by re-reading the roles from the database.
 - `route (9).ts` and `route (10).ts` implement nonce issuance and signature verification.
 - `route (17).ts` implements health checks that return `503` when required configuration or database dependencies fail.
-- `npm test` passed with 18 tests.
+- `npm test` passed with 22 tests.
 - `npm run typecheck`, `npm run lint`, `npm run build`, and `npm run audit` all completed successfully.
+- Lint emits a toolchain compatibility warning because the lockfile resolves TypeScript 5.9 while the installed typescript-eslint version officially supports TypeScript below 5.6.

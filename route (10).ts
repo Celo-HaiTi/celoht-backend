@@ -5,7 +5,7 @@ import { consumeChallenge, getChallenge, ChallengeError } from "@/lib/auth/nonce
 import { verifyWalletSignature, issueSessionToken } from "@/lib/auth/session";
 import { getServiceRoleClient } from "@/lib/supabase/server";
 import { SESSION_COOKIE_NAME } from "@/lib/auth/authorization";
-import { isRateLimited } from "@/lib/rateLimit";
+import { checkRateLimit } from "@/lib/rateLimit";
 
 /**
  * Full wallet-auth verification. Order matters:
@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
     const body = VerifyRequestSchema.parse(await req.json());
     const wallet = body.walletAddress.toLowerCase();
 
-    if (isRateLimited(`verify:${wallet}`, 20, 60_000)) {
+    if (await checkRateLimit(`verify:${wallet}`, 20, 60_000)) {
       return apiError("rate_limited", "Too many verification attempts for this wallet.");
     }
 

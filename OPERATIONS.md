@@ -14,8 +14,8 @@
 - Set `SUPABASE_SERVICE_ROLE_KEY` only in the server environment.
 - Set `CELOHT_ALLOWED_ORIGIN` to the exact dApp/admin origin. Do not use `*`
   with credentialed cookies.
-- Replace the in-memory rate limiter with a shared store before running more
-  than one application instance.
+- Configure `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN`; production
+  fails closed if the shared store is missing or unavailable.
 - Run the Supabase migrations from `celoht-supabase` before deploying this
   service, including `auth_challenges` from the backend auth migration.
 - Confirm the indexer is healthy and advancing its canonical sync state before
@@ -30,3 +30,16 @@
    `npm run audit` in CI.
 5. Smoke test nonce, verify, health, one public read, and one forbidden admin
    request.
+
+## Runtime smoke test
+
+With the backend running and real infrastructure variables loaded, run:
+
+```bash
+npm run smoke
+```
+
+The command checks Celo Sepolia chain identity and block state, Supabase
+service-role reachability, the shared Redis limiter, backend readiness, and an
+unauthorized protected request. It does not fabricate indexer data or claim
+wallet authentication without a real test wallet and deployed schema.

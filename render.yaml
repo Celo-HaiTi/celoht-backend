@@ -18,13 +18,29 @@ services:
         sync: false
       - key: CELO_CHAIN_ID
         value: "11142220"
+      - key: CELO_NETWORK
+        value: celoSepolia
       - key: CELO_RPC_URL
         sync: false
+      - key: CELO_CONFIRMATIONS
+        value: "1"
+      - key: CELO_BACKFILL_BLOCKS
+        value: "0"
+      - key: CELO_POLL_INTERVAL_MS
+        value: "10000"
+      - key: CELO_RPC_RETRIES
+        value: "3"
+      - key: CELO_RPC_TIMEOUT_MS
+        value: "5000"
       - key: AUTH_SESSION_SECRET
         sync: false
       - key: AUTH_NONCE_TTL_SECONDS
         value: "300"
       - key: AUTH_SESSION_TTL_SECONDS
         value: "86400"
+      - key: UPSTASH_REDIS_REST_URL
+        sync: false
+      - key: UPSTASH_REDIS_REST_TOKEN
+        sync: false
       - key: CELOHT_ALLOWED_ORIGIN
         sync: false

@@ -4,13 +4,13 @@
 
 NOT PRODUCTION READY.
 
-The repository contains a solid internal foundation for wallet auth, fail-closed config, HMAC session tokens, and service-role Supabase access patterns, but it does not yet meet the required production boundary for canonical CeloHT backend security and governance enforcement.
+The repository contains a solid internal foundation for wallet auth, fail-closed config, HMAC session tokens, and service-role Supabase access patterns, but it is not yet operationally ready because live integration, shared rate limiting, and deployment verification remain incomplete.
 
 ## Scope and limitations
 
-I inspected the repository currently available in this workspace, including the auth, config, Supabase, health, governance, app routes, and deployment files. The sibling repositories explicitly requested in the mission (`celoht-supabase`, `celoht-governance`, `celoht-indexer`, `celoht-admin`, `celoht-dapp`, `celoht-smart-contracts`) are not present in this workspace, so I could not independently verify the canonical schema, governance contract addresses, or application contracts against those repos.
+I inspected the repository currently available in this workspace, including the auth, config, Supabase, health, governance, app routes, and deployment files. I also inspected the public canonical Supabase, governance, indexer, smart-contract, and dApp repositories and verified their relevant migration and Celo Sepolia deployment artifacts.
 
-That absence is itself material: the repository currently declares backend-owned auth state and governance behavior without a verified canonical upstream contract.
+Live deployment and runtime connectivity remain unavailable in this workspace.
 
 ## Verified strengths
 
@@ -37,15 +37,15 @@ That absence is itself material: the repository currently declares backend-owned
 
 ## Critical production gaps
 
-### 1. Canonical auth schema / nonces are not aligned with the required canonical database
+### 1. Live canonical database verification is incomplete
 
-The repository explicitly describes a backend-owned table in [nonce.ts](../nonce.ts):
+The backend aligns with the canonical `celoht-supabase/0013_auth_challenges.sql` migration:
 
-> "This backend introduces one table not present in celoht-supabase..."
+> `auth_challenges` is backend-owned, service-role-only, and deny-all to client roles.
 
-This conflicts with the mission requirement to use the canonical `auth_challenges` schema in the canonical Supabase project and not to create a second nonce database.
-
-This is a direct violation of the required architecture.
+The remaining work is to apply and exercise that canonical migration in a
+disposable/live Supabase project; this repository must not create a duplicate
+migration.
 
 ### 2. Governance authorization model is incomplete and not least-privilege aligned
 

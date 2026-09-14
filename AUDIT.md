@@ -36,9 +36,10 @@ The repository already contains working code for the following areas:
 
 The repository is functionally strong at the code level, but some areas remain incomplete from a production-readiness perspective:
 
-- Cross-repository canonical schema/ABI verification is not possible in the current workspace because sibling CeloHT repositories are not present.
+- Canonical schema, ABI, deployment, and governance artifacts were verified through the public Celo-HaiTi sibling repositories during this assessment.
 - Production deployment secrets, live Supabase URL/project values, and live RPC settings are not present in this workspace.
-- Multi-instance production rate limiting is not implemented; the current limiter is in-memory only.
+- Multi-instance rate limiting is implemented through an Upstash-compatible
+  shared Redis REST store, but the live store is not configured in this workspace.
 - There are no live end-to-end tests against a disposable Supabase project and verified chain configuration.
 - The repository documents intended integrations but does not independently verify the live canonical database schema or external contract addresses/ABI from sibling repos.
 
@@ -64,7 +65,7 @@ Required external dependencies for a real deployment include:
   - `celoht-governance`
   - `celoht-smart-contracts`
 
-Current workspace does not contain those sibling repositories, so the canonical schema, governance contract interfaces, and DApp integration contracts remain `BLOCKED — VERIFICATION REQUIRED`.
+The sibling repositories are not checked out locally, but their canonical public artifacts were inspected. Live application connectivity remains unverified.
 
 ## Security
 
@@ -78,9 +79,10 @@ Verified strengths:
 
 Remaining security risks / gaps:
 
-- In-memory rate limiting is not production-safe for clustered or autoscaled deployments.
+- Live shared rate-limit behavior and failure recovery remain unverified without
+  a configured Redis REST store.
 - Live end-to-end auth/RLS/replay testing is not present in this workspace.
-- External canonical integrations (schema, contracts, governance model) remain unverified.
+- Live canonical integrations (database, contracts, governance model) remain unverified because no deployed environment is available.
 
 ## Deployment
 
@@ -110,18 +112,18 @@ Available documentation is strong and extensive:
 - `CONTRIBUTING.md`
 - `TROUBLESHOOTING.md`
 
-Documentation gap: the repository documents the intended boundary with other CeloHT repos, but it cannot yet document verified live contract addresses, deployment URLs, or canonical schemas because those external artifacts are unavailable here.
+Documentation gap: the repository documents the intended boundary with other CeloHT repos, but live deployment URLs and runtime connectivity are not available here.
 
 ## Production Blockers
 
 ### P0 — Critical production blocker
 
-- `BLOCKED — VERIFICATION REQUIRED`: Canonical CeloHT external dependencies (`celoht-supabase`, `celoht-indexer`, `celoht-dapp`, `celoht-governance`, `celoht-smart-contracts`) are not present in this workspace, so the authoritative schema, contract addresses, ABIs, and governance/authorization model cannot be independently verified.
-- `BLOCKED — VERIFICATION REQUIRED`: Real deployment values for `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `CELO_RPC_URL`, and `AUTH_SESSION_SECRET` are not present in this workspace, so no live production deployment can be certified.
+- `BLOCKED — LIVE VERIFICATION REQUIRED`: Real deployment values for `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `CELO_RPC_URL`, and `AUTH_SESSION_SECRET` are not present in this workspace, so no live production deployment can be certified.
+- `NEEDS CONFIGURATION`: The shared Redis REST limiter is implemented, but its live endpoint and token are not available in this workspace.
 
 ### P1 — Important production issue
 
-- In-memory rate limiting (`rateLimit.ts`) is not a production-safe shared limiter across multiple instances.
+- The shared limiter still requires live Redis verification before multi-instance deployment.
 - Live end-to-end auth/RLS/replay testing against a disposable Supabase project has not been run.
 
 ### P2 — Improvement
@@ -131,6 +133,6 @@ Documentation gap: the repository documents the intended boundary with other Cel
 
 ## Current Status
 
-READY FOR TESTING
+NOT READY
 
 This status is supported by the repository’s code-level verification results, but not by live production integration or deployment evidence.
