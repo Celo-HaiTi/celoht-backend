@@ -13,7 +13,8 @@
     "test:watch": "vitest",
     "integration": "npm run smoke",
     "smoke": "node scripts/smoke.mjs",
-    "audit": "npm audit --omit=dev --audit-level=high"
+    "audit": "npm audit --omit=dev --audit-level=high",
+    "mock-data-guard": "node scripts/mock-data-guard.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.4",
@@ -30,7 +31,7 @@
     "@typescript-eslint/parser": "^7.16.0",
     "eslint": "^8.57.0",
     "eslint-config-next": "14.2.15",
-    "typescript": "^5.5.3",
+    "typescript": "5.5.3",
     "vitest": "^2.1.1"
   },
   "engines": {

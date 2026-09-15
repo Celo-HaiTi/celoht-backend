@@ -37,7 +37,9 @@ function hasSharedStoreConfig(): boolean {
  */
 export async function checkRateLimit(key: string, limit: number, windowMs: number): Promise<boolean> {
   if (!hasSharedStoreConfig()) {
-    if (process.env.NODE_ENV === "production") return true;
+    if (process.env.NODE_ENV === "production") {
+      return true;
+    }
     return isRateLimited(key, limit, windowMs);
   }
 

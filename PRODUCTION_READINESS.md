@@ -1,115 +1,96 @@
 # CeloHT Production Readiness
 
-## Repository
+## Executive Status
 
-`celoht-backend`
+Repository: celoht-backend
 
-## Repository Type
+Date: 2026-09-15
 
-Backend
+Final status: NOT READY
 
-## Status
+## Verification Matrix
 
-NOT READY
+| Area | Status | Evidence |
+| --- | --- | --- |
+| Build | READY | `npm run build` completed successfully in this workspace. |
+| Typecheck | READY | `npm run typecheck` completed successfully. |
+| Tests | READY | `npm test` passed: 5 files, 24 tests. |
+| Security | READY WITH CONDITIONS | Static security controls and fail-closed config are implemented and the dependency audit reported zero production vulnerabilities. Live integration security verification remains pending. |
+| Dependencies | READY | `npm audit --omit=dev --audit-level=high` reported zero vulnerabilities. |
+| Auth | READY WITH CONDITIONS | Wallet nonce/signature verification and HMAC session tokens are implemented; live replay/RLS validation is not available. |
+| Authorization | READY WITH CONDITIONS | Server-side role re-resolution is enforced from the database; live RBAC and admin integration checks remain pending. |
+| Database | BLOCKED | Live Supabase project and RLS validation are not available in this workspace. |
+| Blockchain | BLOCKED | No live Celo Sepolia RPC and deployment validation were available here. |
+| External integrations | BLOCKED | Shared Redis, canonical Supabase, and canonical Celo deployment dependencies are not configured in this environment. |
+| CI/CD | READY | GitHub Actions runs typecheck, lint, mock-data guard, tests, build, and audit. |
+| Documentation | READY WITH CONDITIONS | Repo docs are internally consistent and explicit about fail-closed behavior; production deployment docs remain environment dependent. |
+| Production deployment | BLOCKED | No live deployment credentials or infrastructure were available to verify runtime production readiness. |
 
-## What Works
+## Findings
 
-- Wallet nonce issuance and signature verification flow are implemented.
-- Session token generation/verification and cookie handling are implemented.
-- Server-side role re-resolution from `profiles.role` is implemented.
-- Fail-closed configuration handling is implemented.
-- Standardized API error handling and health endpoint are implemented.
-- Admin/audit/auth/profile/agents/progress/reforestation/routes are present and build successfully.
-- Canonical Supabase, indexer, governance, and contract repositories are publicly available and their relevant artifacts were inspected.
-- Unit tests covering configuration, auth/session, authorization, and rate-limiting behavior pass.
+### ID: F-001
+- Severity: P1
+- File/path: [rateLimit.ts](rateLimit.ts)
+- Problem: The production rate limiter requires a shared Redis store, but the repository intentionally fails closed when that store is unavailable. This is safe for security, but it means the app is not deployable without the live external Redis service.
+- Security/business impact: Without the production shared store, API abuse protections are not enforced across instances or containers, and the service will reject traffic instead of operating normally.
+- Repair performed: Kept fail-closed behavior explicit and documented; added a CI mock-data guard and pinned TypeScript to a supported version to reduce false-positive risk in tooling.
+- Verification performed: Static review plus repository-wide verification commands.
+- Remaining dependency: `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` from the live production environment.
 
-## What Was Changed
+### ID: F-002
+- Severity: P0
+- File/path: [app/api/v1/health/route.ts](app/api/v1/health/route.ts)
+- Problem: Health checks are implemented correctly, but they cannot be verified as production-ready without the actual Supabase and RPC dependencies present.
+- Security/business impact: The app may be healthy in code while the live services remain unavailable; the code intentionally returns a 503 when dependencies fail, which is the correct behavior but requires external validation.
+- Repair performed: Health handling was hardened to return 503 when configuration or database health persistence fails.
+- Verification performed: Repository-level tests and build passed; live dependency validation remains blocked externally.
+- Remaining dependency: Live disposable Supabase project and Celo Sepolia RPC access.
 
-- Hardened wallet request validation and signed session claim validation.
-- Corrected health readiness so failed health snapshot persistence returns `503`.
-- Added focused regression tests for malformed wallet, nonce, signature, and session payload input.
-- Added `OPERATIONAL_READINESS.md` with the required component matrix and external-audit boundary.
+### ID: F-003
+- Severity: P1
+- File/path: [scripts/mock-data-guard.mjs](scripts/mock-data-guard.mjs)
+- Problem: Production code had no explicit guard to prevent mock-data imports or demo-style fallback patterns from silently entering the release path.
+- Security/business impact: A production app that silently falls back to mock or fake data would mislead operators and create false trust in operational metrics.
+- Repair performed: Added a CI and local guard that scans production code paths for prohibited mock-data imports or directories.
+- Verification performed: `npm run mock-data-guard` passed.
+- Remaining dependency: None in-repo; enforcement is now active in CI.
 
-## Tests
+### ID: F-004
+- Severity: P2
+- File/path: [package.json](package.json)
+- Problem: The repository used an unsupported TypeScript-eslint combination with a newer TypeScript version, which caused lint/tooling warnings even though the code itself passed.
+- Security/business impact: Toolchain mismatch is a reliability issue; it can create false confidence in lint output and complicate future upgrades.
+- Repair performed: Pinned TypeScript to 5.5.3 to match the supported range of the installed eslint toolchain.
+- Verification performed: Typecheck, lint, test, and build all passed after the fix.
+- Remaining dependency: None.
 
-Executed and verified:
+## External Blockers
 
-- `npm test` ✅
-- `npm run typecheck` ✅
-- `npm run lint` ✅
-- `npm run build` ✅
-- `npm run audit` ✅
+### Blocker 1
+- Exact requirement: A disposable or production Supabase project with the canonical schema and RLS rules must be available, along with the required service-role and anon credentials.
+- Exact environment variables or service required: `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`.
+- Why it cannot be verified locally: This workspace does not contain a live Supabase project or credentials for authenticated/RLS validation.
+- Exact command/test to run once available: `npm run smoke` with the required environment variables exported, or a live end-to-end auth/RLS/replay validation suite against the canonical Supabase project.
 
-## Security
+### Blocker 2
+- Exact requirement: A live Celo Sepolia RPC endpoint and a configured chain deployment must be available for wallet and chain validation.
+- Exact environment variables or service required: `CELO_CHAIN_ID`, `CELO_RPC_URL`, `CELO_NETWORK`.
+- Why it cannot be verified locally: No live Celo Sepolia RPC connection or canonical deployment metadata was available in this workspace.
+- Exact command/test to run once available: `node scripts/smoke.mjs` after exporting the required variables and a valid `CELO_RPC_URL`.
 
-Completed checks:
+### Blocker 3
+- Exact requirement: A production shared rate-limit service must be configured and reachable by the backend.
+- Exact environment variables or service required: `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`.
+- Why it cannot be verified locally: The live Upstash Redis REST endpoint and token are not present in this environment.
+- Exact command/test to run once available: `node scripts/smoke.mjs` and a live API stress check against the production Redis store.
 
-- Verified server-only secret handling pattern.
-- Verified fail-closed configuration behavior.
-- Verified HMAC session token validation and timing-safe comparison.
-- Verified generic error handling and health gating.
-- Verified `npm audit` reports zero high/critical vulnerabilities for production dependencies.
+## Residual Risks
 
-## Deployment
+- Live Supabase RLS and cross-user authorization remain unverified without a real project.
+- Live Celo Sepolia RPC and wallet-identity checks remain unverified without access to the canonical chain configuration.
+- Shared multi-instance rate limiting remains unverified in production because the live Upstash endpoint is not configured here.
+- Full governance and indexer integration remains dependent on repository-level canonical artifacts outside this workspace.
 
-Verified repository configuration:
+## Final Certification
 
-- `render.yaml` exists for a backend web service deployment.
-- `DEPLOYMENT.md` and `ENVIRONMENT.md` define environment variables and startup sequence.
-- `GET /api/v1/health` returns `503` when configuration or database dependencies are unavailable.
-
-Live deployment status remains unverified because deployment credentials and a disposable Supabase project are not present in this workspace.
-
-## External Dependencies
-
-The following external dependencies are required for full production verification:
-
-- `celoht-supabase`
-- `celoht-indexer`
-- `celoht-dapp`
-- `celoht-governance`
-- `celoht-smart-contracts`
-
-Their canonical artifacts were inspected: Supabase `0013_auth_challenges.sql`,
-governance `0013_governance_workflow.sql`, and matching Celo Sepolia deployment
-manifests from the indexer and smart-contract repositories.
-
-## P0
-
-- `BLOCKED — LIVE VERIFICATION REQUIRED`: No disposable/live Supabase project or RPC credentials are available for authenticated, RLS, and indexer-backed smoke tests.
-- `NEEDS CONFIGURATION`: The shared Redis REST limiter is implemented, but its live endpoint and token are not available in this workspace.
-
-## P1
-
-- Live end-to-end replay/RLS/auth integration tests are not present in this workspace.
-
-## P2
-
-- Configure and verify the production-grade shared rate-limit store.
-- Add end-to-end tests against a disposable Supabase project.
-- Add explicit production observability and alerting runbooks.
-
-## Remaining Blockers
-
-### WHAT IS MISSING
-- Live shared Redis, disposable Supabase, and Celo Sepolia credentials for integration verification.
-
-### WHY IT MATTERS
-- The backend cannot be certified as operational without a shared rate-limit store and live verification of database, RPC, and indexer boundaries.
-
-### WHAT IS REQUIRED
-- Configure a production shared rate-limit store.
-- Provide live or disposable environment values.
-- Run end-to-end auth/RLS/replay/indexer tests against the canonical Supabase project and Celo Sepolia deployment.
-
-## Evidence
-
-- `package.json` defines `typecheck`, `lint`, `test`, `build`, and `audit` scripts.
-- `config.ts` implements fail-closed configuration validation.
-- `session.ts` implements signed session tokens with HMAC verification.
-- `authorization.ts` enforces server-side role checks by re-reading the roles from the database.
-- `route (9).ts` and `route (10).ts` implement nonce issuance and signature verification.
-- `route (17).ts` implements health checks that return `503` when required configuration or database dependencies fail.
-- `npm test` passed with 22 tests.
-- `npm run typecheck`, `npm run lint`, `npm run build`, and `npm run audit` all completed successfully.
-- Lint emits a toolchain compatibility warning because the lockfile resolves TypeScript 5.9 while the installed typescript-eslint version officially supports TypeScript below 5.6.
+NOT READY — remaining blockers: live Supabase, Celo Sepolia RPC, and shared Redis verification required.
