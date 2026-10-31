@@ -62,8 +62,54 @@ paths:
       security: [{ session: [] }]
       requestBody:
         required: true
-        content: { application/json: { schema: { type: object, additionalProperties: true } } }
+        content: { application/json: { schema: { $ref: '#/components/schemas/AgentApplication' } } }
       responses: { '201': { $ref: '#/components/responses/Success' }, '409': { $ref: '#/components/responses/Conflict' } }
+    patch:
+      tags: [Agents]
+      security: [{ session: [] }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/AgentProfileUpdate' } } }
+      responses: { '200': { $ref: '#/components/responses/Success' }, '409': { $ref: '#/components/responses/Conflict' } }
+  /agents/directory:
+    get:
+      tags: [Agents]
+      security: []
+      parameters:
+        - { in: query, name: search, schema: { type: string, maxLength: 80 } }
+        - { in: query, name: countryCode, schema: { type: string, pattern: '^[A-Z]{2}$' } }
+        - { in: query, name: region, schema: { type: string, maxLength: 100 } }
+        - { in: query, name: locality, schema: { type: string, maxLength: 100 } }
+        - { in: query, name: serviceCategory, schema: { type: string, pattern: '^[a-z0-9][a-z0-9_-]{0,49}$' } }
+        - { $ref: '#/components/parameters/Limit' }
+        - { $ref: '#/components/parameters/Offset' }
+      responses: { '200': { $ref: '#/components/responses/Success' } }
+  /agents/directory/{agentId}:
+    get:
+      tags: [Agents]
+      security: []
+      parameters: [{ in: path, name: agentId, required: true, schema: { type: string, format: uuid } }]
+      responses: { '200': { $ref: '#/components/responses/Success' }, '404': { $ref: '#/components/responses/NotFound' } }
+  /agents/services:
+    get: { tags: [Agents], security: [{ session: [] }], responses: { '200': { $ref: '#/components/responses/Success' } } }
+    post:
+      tags: [Agents]
+      security: [{ session: [] }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/AgentService' } } }
+      responses: { '201': { $ref: '#/components/responses/Success' }, '409': { $ref: '#/components/responses/Conflict' } }
+  /agents/services/{serviceId}:
+    patch:
+      tags: [Agents]
+      security: [{ session: [] }]
+      parameters: [{ in: path, name: serviceId, required: true, schema: { type: string, format: uuid } }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/AgentServiceUpdate' } } }
+      responses: { '200': { $ref: '#/components/responses/Success' }, '404': { $ref: '#/components/responses/NotFound' } }
+  /agents/activity:
+    get: { tags: [Agents], security: [{ session: [] }], responses: { '200': { $ref: '#/components/responses/Success' } } }
   /agents/kyc:
     get: { tags: [Agents], security: [{ session: [] }], responses: { '200': { $ref: '#/components/responses/Success' } } }
     post:
@@ -71,7 +117,15 @@ paths:
       security: [{ session: [] }]
       requestBody:
         required: true
-        content: { application/json: { schema: { $ref: '#/components/schemas/KycSubmission' } } }
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [documentType, file]
+              properties:
+                documentType: { type: string, minLength: 1, maxLength: 60 }
+                file: { type: string, format: binary, description: PDF, JPEG, or PNG up to 10 MB }
+          application/json: { schema: { $ref: '#/components/schemas/KycSubmission' } }
       responses: { '201': { $ref: '#/components/responses/Success' } }
   /courses:
     get:
@@ -139,7 +193,14 @@ paths:
     get: { tags: [Admin], security: [{ session: [] }], responses: { '200': { $ref: '#/components/responses/Success' }, '403': { $ref: '#/components/responses/Forbidden' } } }
     post: { tags: [Admin], security: [{ session: [] }], responses: { '200': { $ref: '#/components/responses/Success' }, '403': { $ref: '#/components/responses/Forbidden' } } }
   /admin/agents:
-    post: { tags: [Admin], security: [{ session: [] }], responses: { '200': { $ref: '#/components/responses/Success' }, '403': { $ref: '#/components/responses/Forbidden' } } }
+    get: { tags: [Admin], security: [{ session: [] }], responses: { '200': { $ref: '#/components/responses/Success' }, '403': { $ref: '#/components/responses/Forbidden' } } }
+    post:
+      tags: [Admin]
+      security: [{ session: [] }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/AgentDecision' } } }
+      responses: { '200': { $ref: '#/components/responses/Success' }, '403': { $ref: '#/components/responses/Forbidden' }, '409': { $ref: '#/components/responses/Conflict' } }
   /admin/courses:
     get:
       tags: [Admin]
@@ -170,6 +231,11 @@ components:
     VerifyRequest: { type: object, required: [walletAddress, nonce, signature], properties: { walletAddress: { type: string, pattern: '^0x[0-9a-fA-F]{40}$' }, nonce: { type: string, pattern: '^[0-9a-f]{64}$' }, signature: { type: string, pattern: '^0x[0-9a-fA-F]{130}$' } }, additionalProperties: false }
     ProfileUpdate: { type: object, properties: { displayName: { type: string, maxLength: 120 }, avatarUrl: { type: string, maxLength: 2048 } }, additionalProperties: false }
     KycSubmission: { type: object, required: [documentType, storagePath], properties: { documentType: { type: string, maxLength: 60 }, storagePath: { type: string } }, additionalProperties: false }
+    AgentApplication: { type: object, required: [publicProfile, applicationData], properties: { publicProfile: { type: object, required: [displayName, countryCode], properties: { displayName: { type: string, minLength: 1, maxLength: 100 }, bio: { type: string, maxLength: 2000 }, countryCode: { type: string, pattern: '^[A-Z]{2}$' }, region: { type: string, maxLength: 100 }, locality: { type: string, maxLength: 100 } }, additionalProperties: false }, applicationData: { type: object, required: [motivation], properties: { motivation: { type: string, minLength: 20, maxLength: 3000 }, experience: { type: string, maxLength: 3000 } }, additionalProperties: false } }, additionalProperties: false }
+    AgentProfileUpdate: { type: object, properties: { displayName: { type: string, minLength: 1, maxLength: 100 }, bio: { type: string, maxLength: 2000 }, countryCode: { type: string, pattern: '^[A-Z]{2}$' }, region: { type: string, maxLength: 100 }, locality: { type: string, maxLength: 100 }, directoryPublic: { type: boolean } }, additionalProperties: false }
+    AgentService: { type: object, required: [serviceCategory, name], properties: { serviceCategory: { type: string, pattern: '^[a-z0-9][a-z0-9_-]{0,49}$' }, name: { type: string, minLength: 1, maxLength: 120 }, description: { type: string, maxLength: 1000 }, isAvailable: { type: boolean }, availability: { type: object, additionalProperties: { type: string, maxLength: 120 } } }, additionalProperties: false }
+    AgentServiceUpdate: { type: object, properties: { serviceCategory: { type: string, pattern: '^[a-z0-9][a-z0-9_-]{0,49}$' }, name: { type: string, minLength: 1, maxLength: 120 }, description: { type: string, maxLength: 1000 }, isAvailable: { type: boolean }, availability: { type: object, additionalProperties: { type: string, maxLength: 120 } } }, additionalProperties: false, minProperties: 1 }
+    AgentDecision: { type: object, required: [agentId, decision], properties: { agentId: { type: string, format: uuid }, decision: { type: string, enum: [approved, suspended, rejected] }, reviewerNotes: { type: string, maxLength: 2000 } }, additionalProperties: false }
     ProgressUpdate: { type: object, required: [enrollmentId, lessonId], properties: { enrollmentId: { type: string, format: uuid }, lessonId: { type: string, format: uuid } }, additionalProperties: false }
     QuizSubmission: { type: object, required: [enrollmentId, answers], properties: { enrollmentId: { type: string, format: uuid }, answers: { type: array, minItems: 1, maxItems: 100, items: { type: object, required: [questionId, selectedOptionIndex], properties: { questionId: { type: string, format: uuid }, selectedOptionIndex: { type: integer, minimum: 0, maximum: 7 } }, additionalProperties: false } } }, additionalProperties: false }
     Error: { type: object, required: [error], properties: { error: { type: object, required: [code, message, requestId], properties: { code: { type: string }, message: { type: string }, details: {}, requestId: { type: string, format: uuid } } } } }

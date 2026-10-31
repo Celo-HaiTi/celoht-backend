@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { apiOk, withApiErrorHandling } from "@/lib/errors";
+import { apiError, apiOk, withApiErrorHandling } from "@/lib/errors";
 import { requireActor, requireRole } from "@/lib/auth/authorization";
 import { getServiceRoleClient } from "@/lib/supabase/server";
 import { KycDecisionSchema } from "@/schemas/agents";
@@ -14,11 +14,27 @@ export async function GET(req: NextRequest) {
     const supabase = getServiceRoleClient();
     const { data, error } = await supabase
       .from("agent_kyc")
-      .select("id, agent_id, document_type, status, submitted_at")
+      .select("id, agent_id, document_type, storage_path, status, submitted_at")
       .in("status", ["submitted", "under_review"])
       .order("submitted_at", { ascending: true });
     if (error) throw error;
-    return apiOk(data);
+
+    const submissions = await Promise.all((data ?? []).map(async (submission) => {
+      const { data: signedFile, error: signedFileError } = await supabase.storage
+        .from("agent-kyc")
+        .createSignedUrl(submission.storage_path, 300);
+      if (signedFileError) throw signedFileError;
+      return {
+        id: submission.id,
+        agentId: submission.agent_id,
+        documentType: submission.document_type,
+        status: submission.status,
+        submittedAt: submission.submitted_at,
+        documentUrl: signedFile.signedUrl,
+        documentUrlExpiresInSeconds: 300,
+      };
+    }));
+    return apiOk(submissions);
   });
 }
 
@@ -42,8 +58,9 @@ export async function POST(req: NextRequest) {
       })
       .eq("id", body.kycId)
       .select("id, agent_id, status")
-      .single();
+      .maybeSingle();
     if (error) throw error;
+    if (!data) return apiError("not_found", "KYC submission not found.");
 
     await writeAuditLog({
       actorId: actor.profileId,
@@ -55,15 +72,17 @@ export async function POST(req: NextRequest) {
 
     // Reflect an approval into the agent's off-chain status.
     if (body.decision === "approved") {
-      await supabase
+      const { error: agentUpdateError } = await supabase
         .from("agents")
         .update({ off_chain_kyc_status: "approved", reviewed_by: actor.profileId, reviewed_at: new Date().toISOString() })
         .eq("id", data.agent_id);
+      if (agentUpdateError) throw agentUpdateError;
     } else {
-      await supabase
+      const { error: agentUpdateError } = await supabase
         .from("agents")
         .update({ off_chain_kyc_status: "rejected", reviewed_by: actor.profileId, reviewed_at: new Date().toISOString() })
         .eq("id", data.agent_id);
+      if (agentUpdateError) throw agentUpdateError;
     }
 
     return apiOk(data);

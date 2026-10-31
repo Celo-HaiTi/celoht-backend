@@ -1,12 +1,14 @@
 # ADMIN.md
 
 ## Reviewer capabilities
+- Review pending agent applications (`GET /api/v1/admin/agents`)
+- Approve/reject agent applications (`POST /api/v1/admin/agents`)
 - Approve/reject KYC submissions (`POST /api/v1/admin/kyc`)
 - Verify/reject reforestation evidence (`POST /api/v1/admin/evidence`)
 
 ## Admin-only capabilities
 - Everything a reviewer can do, plus:
-- Approve/suspend/reject an agent's off-chain status (`POST /api/v1/admin/agents`)
+- Suspend an agent's off-chain status (`POST /api/v1/admin/agents`)
 - List, create, and edit draft education courses, then publish validated course content (`GET`, `POST /api/v1/admin/courses`)
 - Read the full audit trail (`GET /api/v1/admin/audit-logs`)
 - Change another profile's role (direct table update, service role — not yet
