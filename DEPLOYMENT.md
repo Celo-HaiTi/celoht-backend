@@ -1,8 +1,9 @@
 # DEPLOYMENT.md
 
 ## Render prerequisites
-- A `celoht-supabase` project with all migrations applied, including the
-	`system_health` table and the wallet-auth tables.
+- A `celoht-supabase` project with all migrations applied, including
+	`0013_auth_challenges.sql`, the profile schema, and `system_health`. The auth
+	challenge schema is owned by that repository; do not create a duplicate here.
 - A Celo Sepolia RPC endpoint that reports chain ID `11142220`.
 - An Upstash Redis REST database for shared production rate limiting.
 - The Render Blueprint in `render.yaml` connected to this repository.

@@ -12,7 +12,8 @@ Errors also return the same `requestId` in the `x-request-id` response header.
 |---|---|---|---|
 | POST | `/auth/nonce` | none | Issue a sign-in challenge for a wallet address |
 | POST | `/auth/verify` | none | Verify a signed challenge; sets session cookie |
-| POST | `/auth/logout` | session | Clears the session cookie |
+| GET | `/auth/session` | session | Return the authenticated wallet and current role |
+| POST | `/auth/logout` | none | Clear the session cookie |
 
 ## Profile
 | Method | Path | Auth | Description |

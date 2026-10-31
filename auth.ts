@@ -6,7 +6,7 @@ export const WalletAddressSchema = z
 
 export const NonceRequestSchema = z.object({
   walletAddress: WalletAddressSchema,
-});
+}).strict();
 
 export const VerifyRequestSchema = z.object({
   walletAddress: WalletAddressSchema,
@@ -14,4 +14,4 @@ export const VerifyRequestSchema = z.object({
   signature: z
     .string()
     .regex(/^0x[0-9a-fA-F]{130}$/, "Must be a 65-byte hex signature"),
-});
+}).strict();

@@ -6,6 +6,10 @@ describe("wallet authentication request schemas", () => {
     expect(() => NonceRequestSchema.parse({ walletAddress: "not-a-wallet" })).toThrow();
   });
 
+  it("rejects unrecognized fields instead of accepting credential-like input", () => {
+    expect(() => NonceRequestSchema.parse({ walletAddress: `0x${"a".repeat(40)}`, privateKey: "not-accepted" })).toThrow();
+  });
+
   it("rejects malformed challenge nonces and signatures", () => {
     expect(() =>
       VerifyRequestSchema.parse({

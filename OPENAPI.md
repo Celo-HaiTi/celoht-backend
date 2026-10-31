@@ -28,7 +28,7 @@ paths:
       requestBody:
         required: true
         content: { application/json: { schema: { $ref: '#/components/schemas/NonceRequest' } } }
-      responses: { '200': { $ref: '#/components/responses/Success' }, '422': { $ref: '#/components/responses/ValidationError' } }
+      responses: { '200': { $ref: '#/components/responses/Success' }, '422': { $ref: '#/components/responses/ValidationError' }, '429': { $ref: '#/components/responses/RateLimited' } }
   /auth/verify:
     post:
       tags: [Auth]
@@ -36,7 +36,12 @@ paths:
       requestBody:
         required: true
         content: { application/json: { schema: { $ref: '#/components/schemas/VerifyRequest' } } }
-      responses: { '200': { $ref: '#/components/responses/Success' }, '401': { $ref: '#/components/responses/Unauthorized' } }
+      responses: { '200': { $ref: '#/components/responses/Success' }, '401': { $ref: '#/components/responses/Unauthorized' }, '422': { $ref: '#/components/responses/ValidationError' }, '429': { $ref: '#/components/responses/RateLimited' } }
+  /auth/session:
+    get:
+      tags: [Auth]
+      security: [{ session: [] }]
+      responses: { '200': { $ref: '#/components/responses/Success' }, '401': { $ref: '#/components/responses/Unauthorized' }, '429': { $ref: '#/components/responses/RateLimited' } }
   /auth/logout:
     post:
       tags: [Auth]
@@ -116,8 +121,8 @@ components:
     Limit: { in: query, name: limit, schema: { type: integer, minimum: 1, maximum: 100, default: 20 } }
     Offset: { in: query, name: offset, schema: { type: integer, minimum: 0, default: 0 } }
   schemas:
-    NonceRequest: { type: object, required: [walletAddress], properties: { walletAddress: { type: string, pattern: '^0x[0-9a-fA-F]{40}$' } } }
-    VerifyRequest: { type: object, required: [walletAddress, nonce, signature], properties: { walletAddress: { type: string }, nonce: { type: string, minLength: 32 }, signature: { type: string } } }
+    NonceRequest: { type: object, required: [walletAddress], properties: { walletAddress: { type: string, pattern: '^0x[0-9a-fA-F]{40}$' } }, additionalProperties: false }
+    VerifyRequest: { type: object, required: [walletAddress, nonce, signature], properties: { walletAddress: { type: string, pattern: '^0x[0-9a-fA-F]{40}$' }, nonce: { type: string, pattern: '^[0-9a-f]{64}$' }, signature: { type: string, pattern: '^0x[0-9a-fA-F]{130}$' } }, additionalProperties: false }
     ProfileUpdate: { type: object, properties: { displayName: { type: string, maxLength: 120 }, avatarUrl: { type: string, maxLength: 2048 } }, additionalProperties: false }
     KycSubmission: { type: object, required: [documentType, storagePath], properties: { documentType: { type: string, maxLength: 60 }, storagePath: { type: string } }, additionalProperties: false }
     ProgressUpdate: { type: object, required: [lessonId, completed], properties: { lessonId: { type: string, format: uuid }, completed: { type: boolean } }, additionalProperties: false }
@@ -129,6 +134,7 @@ components:
     Forbidden: { description: Insufficient role, content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
     Conflict: { description: Duplicate operation, content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
     Unavailable: { description: Dependency unavailable, content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+    RateLimited: { description: Rate limit exceeded, content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
 ```
 
 All mutating operations are validated with Zod. Paginated reads cap `limit` at

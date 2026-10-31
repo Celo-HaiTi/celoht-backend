@@ -44,10 +44,13 @@ export async function requireActor(req: NextRequest): Promise<AuthenticatedActor
     .from("profiles")
     .select("id, wallet_address, role")
     .eq("id", payload.sub)
+    .eq("wallet_address", payload.wallet)
     .maybeSingle();
 
   if (error) throw error;
-  if (!data) throw new AuthError("unauthenticated", "Profile no longer exists.");
+  if (!data || data.wallet_address.toLowerCase() !== payload.wallet) {
+    throw new AuthError("unauthenticated", "Session wallet no longer matches its profile.");
+  }
 
   return { profileId: data.id, walletAddress: data.wallet_address, role: data.role as Role };
 }

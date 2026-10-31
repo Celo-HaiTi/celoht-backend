@@ -36,16 +36,18 @@ export interface Challenge {
   expiresAt: Date;
 }
 
-function buildMessage(walletAddress: string, nonce: string, expiresAt: Date): string {
+function buildMessage(walletAddress: string, nonce: string, expiresAt: Date, chainId: number): string {
   return [
     "CeloHT wants you to sign in with your wallet.",
     `Wallet: ${walletAddress.toLowerCase()}`,
+    `Chain ID: ${chainId}`,
     `Nonce: ${nonce}`,
     `Expires: ${expiresAt.toISOString()}`,
   ].join("\n");
 }
 
 export async function getChallenge(walletAddress: string, nonce: string): Promise<Challenge> {
+  const config = getConfig();
   const supabase = getServiceRoleClient();
   const { data, error } = await supabase
     .from("auth_challenges")
@@ -58,12 +60,12 @@ export async function getChallenge(walletAddress: string, nonce: string): Promis
   if (!data || data.used_at) throw new ChallengeError("Unknown or already-consumed challenge.");
 
   const expiresAt = new Date(data.expires_at);
-  if (expiresAt.getTime() < Date.now()) throw new ChallengeError("Challenge has expired.");
+  if (expiresAt.getTime() <= Date.now()) throw new ChallengeError("Challenge has expired.");
 
   return {
     walletAddress: walletAddress.toLowerCase(),
     nonce: data.nonce,
-    message: buildMessage(walletAddress, data.nonce, expiresAt),
+    message: buildMessage(walletAddress, data.nonce, expiresAt, config.CELO_CHAIN_ID),
     expiresAt,
   };
 }
@@ -72,7 +74,7 @@ export async function issueChallenge(walletAddress: string): Promise<Challenge> 
   const config = getConfig();
   const nonce = randomBytes(32).toString("hex");
   const expiresAt = new Date(Date.now() + config.AUTH_NONCE_TTL_SECONDS * 1000);
-  const message = buildMessage(walletAddress, nonce, expiresAt);
+  const message = buildMessage(walletAddress, nonce, expiresAt, config.CELO_CHAIN_ID);
 
   const supabase = getServiceRoleClient();
   const { error } = await supabase.from("auth_challenges").insert({
@@ -105,7 +107,7 @@ export async function consumeChallenge(walletAddress: string, nonce: string): Pr
   if (error) throw error;
   if (!data) throw new ChallengeError("Unknown or already-consumed challenge.");
   if (data.used_at) throw new ChallengeError("Challenge has already been used.");
-  if (new Date(data.expires_at).getTime() < Date.now()) {
+  if (new Date(data.expires_at).getTime() <= Date.now()) {
     throw new ChallengeError("Challenge has expired.");
   }
 

@@ -90,7 +90,7 @@ export function verifySessionToken(token: string): SessionPayload {
   } catch {
     throw new SessionError("Malformed session payload.");
   }
-  if (payload.exp < Math.floor(Date.now() / 1000)) {
+  if (payload.exp <= Math.floor(Date.now() / 1000)) {
     throw new SessionError("Session has expired.");
   }
   return payload;

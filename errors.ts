@@ -59,6 +59,15 @@ export async function withApiErrorHandling(
       return apiError("service_unavailable", "Service is not fully configured.");
     }
 
+    const { AuthError } = await import("@/lib/auth/authorization");
+    if (err instanceof AuthError) {
+      return apiError(err.code, err.message);
+    }
+
+    if (err instanceof SyntaxError) {
+      return apiError("validation_error", "Request body must be valid JSON.");
+    }
+
     const isZodError =
       typeof err === "object" && err !== null && "issues" in err && Array.isArray((err as { issues: unknown }).issues);
     if (isZodError) {
