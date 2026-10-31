@@ -3,6 +3,34 @@ import { getConfig, ConfigurationError } from "@/lib/config";
 import { getServiceRoleClient } from "@/lib/supabase/server";
 import { logger } from "@/lib/logger";
 
+function getDatabaseDiagnosticCode(error: unknown): string {
+  if (typeof error !== "object" || error === null) return "query_failed";
+
+  const info = error as { code?: unknown; status?: unknown; name?: unknown; cause?: unknown };
+  const cause = typeof info.cause === "object" && info.cause !== null ? (info.cause as { code?: unknown }) : {};
+  const codes = [info.code, cause.code].filter((code): code is string => typeof code === "string");
+
+  if (codes.some((code) => code === "42P01" || code === "PGRST205") || info.status === 404) {
+    return "table_unavailable";
+  }
+  if (codes.includes("PGRST002") || codes.includes("PGRST204")) return "schema_incompatible";
+  if (codes.includes("42501") || info.status === 403) return "permission_denied";
+  if (codes.some((code) => ["PGRST301", "PGRST302", "28P01"].includes(code)) || info.status === 401) {
+    return "credentials_rejected";
+  }
+  if (
+    codes.some((code) =>
+      code.startsWith("08") ||
+      ["PGRST000", "PGRST001", "PGRST003", "ECONNREFUSED", "ECONNRESET", "ENOTFOUND", "EAI_AGAIN", "ETIMEDOUT"].includes(code)
+    ) ||
+    info.name === "TypeError"
+  ) {
+    return "connection_failed";
+  }
+  if (typeof info.status === "number" && info.status >= 500) return "upstream_unavailable";
+  return "query_failed";
+}
+
 /**
  * Never reports healthy while a critical dependency is unreachable.
  * A misconfigured deployment returns 503, not a fabricated "ok".
@@ -26,12 +54,10 @@ export async function GET() {
     const dependencies: Record<string, "healthy" | "unavailable"> = {
       database: "unavailable",
       celoSepoliaRpc: "unavailable",
+      rateLimitStore: "unavailable",
     };
-    if (config.UPSTASH_REDIS_REST_URL && config.UPSTASH_REDIS_REST_TOKEN) {
-      dependencies.rateLimitStore = "unavailable";
-    }
 
-    const databaseCheck = Promise.resolve(supabase.from("system_health").select("id").limit(1));
+    const databaseCheck = Promise.resolve().then(() => supabase.from("profiles").select("id").limit(1));
     const rpcCheck = (async () => {
         const response = await fetch(config.CELO_RPC_URL, {
           method: "POST",
@@ -45,7 +71,7 @@ export async function GET() {
         return !body.error && body.result === expectedChainId;
       })();
     const rateLimitCheck = (async () => {
-      if (!dependencies.rateLimitStore) return true;
+      if (!config.UPSTASH_REDIS_REST_URL || !config.UPSTASH_REDIS_REST_TOKEN) return false;
           const response = await fetch(config.UPSTASH_REDIS_REST_URL as string, {
             method: "POST",
             headers: {
@@ -65,10 +91,17 @@ export async function GET() {
       rateLimitCheck,
     ]);
 
+    const diagnostics: Record<string, string> = {};
+    const databaseError =
+      databaseResult.status === "fulfilled" ? databaseResult.value.error : databaseResult.reason;
     if (databaseResult.status === "fulfilled" && !databaseResult.value.error) {
       dependencies.database = "healthy";
     } else {
-      logger.error("health.dependency_unavailable", { component: "database" });
+      diagnostics.database = getDatabaseDiagnosticCode(databaseError);
+      logger.error("health.dependency_unavailable", {
+        component: "database",
+        diagnosticCode: diagnostics.database,
+      });
     }
 
     if (rpcResult.status === "fulfilled" && rpcResult.value) {
@@ -77,18 +110,17 @@ export async function GET() {
       logger.error("health.dependency_unavailable", { component: "celoSepoliaRpc" });
     }
 
-    if (dependencies.rateLimitStore) {
-      if (rateLimitResult?.status === "fulfilled" && rateLimitResult.value) {
-        dependencies.rateLimitStore = "healthy";
-      } else {
-        logger.error("health.dependency_unavailable", { component: "rateLimitStore" });
-      }
+    if (rateLimitResult.status === "fulfilled" && rateLimitResult.value) {
+      dependencies.rateLimitStore = "healthy";
+    } else {
+      logger.error("health.dependency_unavailable", { component: "rateLimitStore" });
     }
 
     const healthy = Object.values(dependencies).every((status) => status === "healthy");
     if (!healthy) {
       return apiError("service_unavailable", "One or more backend dependencies are unavailable.", {
         dependencies,
+        diagnostics,
       });
     }
 

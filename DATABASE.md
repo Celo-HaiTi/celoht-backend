@@ -18,3 +18,10 @@ marked BACKEND OWNED and reads (never writes) tables marked INDEXER OWNED.
 The governance workflow tables are owned and migrated by
 `celoht-governance/migrations/0013_governance_workflow.sql`; this backend does
 not currently expose governance mutation or execution endpoints.
+
+## Readiness probe
+`GET /api/v1/health` performs a read-only `id` query against `profiles` using
+the server-side service-role client. No `system_health` table is required, and
+this repository contains no migration for one. The canonical Supabase schema
+must still be applied so the core `profiles` table exists and is readable by
+the service role.

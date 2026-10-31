@@ -111,14 +111,68 @@ describe("GET /api/v1/health", () => {
   });
 
   it("returns 503 when Supabase read access fails", async () => {
-    limitMock.mockResolvedValue({ error: { message: "private database detail" } });
+    limitMock.mockResolvedValue({
+      error: { code: "42501", message: "private database detail with sensitive context" },
+    });
 
     const response = await GET();
     const body = await response.json();
 
     expect(response.status).toBe(503);
     expect(body.error.details.dependencies.database).toBe("unavailable");
+    expect(body.error.details.diagnostics.database).toBe("permission_denied");
     expect(JSON.stringify(body)).not.toContain("private database detail");
+  });
+
+  it("reports a missing table using a safe diagnostic code", async () => {
+    limitMock.mockResolvedValue({ error: { code: "PGRST205", message: "private relation details" } });
+    const log = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const response = await GET();
+    const body = await response.json();
+
+    expect(response.status).toBe(503);
+    expect(body.error.details.diagnostics.database).toBe("table_unavailable");
+    expect(JSON.stringify(body)).not.toContain("private relation details");
+    expect(JSON.stringify(log.mock.calls)).not.toContain("private relation details");
+    expect(JSON.stringify(log.mock.calls)).toContain("table_unavailable");
+  });
+
+  it("reports a rejected database request without logging the thrown error", async () => {
+    limitMock.mockRejectedValue(new Error("private network and credential details"));
+    const log = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const response = await GET();
+    const body = await response.json();
+
+    expect(response.status).toBe(503);
+    expect(body.error.details.diagnostics.database).toBe("query_failed");
+    expect(JSON.stringify(body)).not.toContain("private network and credential details");
+    expect(JSON.stringify(log.mock.calls)).not.toContain("private network and credential details");
+  });
+
+  it("classifies a Supabase URL or network failure without exposing its message", async () => {
+    limitMock.mockRejectedValue(new TypeError("fetch failed: private project URL"));
+    const log = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const response = await GET();
+    const body = await response.json();
+
+    expect(response.status).toBe(503);
+    expect(body.error.details.diagnostics.database).toBe("connection_failed");
+    expect(JSON.stringify(body)).not.toContain("private project URL");
+    expect(JSON.stringify(log.mock.calls)).not.toContain("private project URL");
+  });
+
+  it("classifies a schema mismatch without exposing the provider message", async () => {
+    limitMock.mockResolvedValue({ error: { code: "PGRST204", message: "private schema detail" } });
+
+    const response = await GET();
+    const body = await response.json();
+
+    expect(response.status).toBe(503);
+    expect(body.error.details.diagnostics.database).toBe("schema_incompatible");
+    expect(JSON.stringify(body)).not.toContain("private schema detail");
   });
 
   it("reports healthy only after read-only Supabase and Sepolia checks pass", async () => {
@@ -131,7 +185,7 @@ describe("GET /api/v1/health", () => {
       celoSepoliaRpc: "healthy",
       rateLimitStore: "healthy",
     });
-    expect(fromMock).toHaveBeenCalledWith("system_health");
+    expect(fromMock).toHaveBeenCalledWith("profiles");
   });
 
   it("returns 503 when the production rate-limit store is unreachable", async () => {
@@ -145,5 +199,22 @@ describe("GET /api/v1/health", () => {
 
     expect(response.status).toBe(503);
     expect(body.error.details.dependencies.rateLimitStore).toBe("unavailable");
+  });
+
+  it("never reports ready when the rate-limit store is missing, including outside production", async () => {
+    process.env = { ...process.env, NODE_ENV: "test" };
+    delete process.env.UPSTASH_REDIS_REST_URL;
+    delete process.env.UPSTASH_REDIS_REST_TOKEN;
+    __resetConfigCacheForTests();
+
+    const response = await GET();
+    const body = await response.json();
+
+    expect(response.status).toBe(503);
+    expect(body.error.details.dependencies).toEqual({
+      database: "healthy",
+      celoSepoliaRpc: "healthy",
+      rateLimitStore: "unavailable",
+    });
   });
 });

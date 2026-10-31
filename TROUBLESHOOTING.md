@@ -8,8 +8,10 @@ dependency statuses. Check Render logs for `health.configuration_invalid` or
 Production requires valid Supabase credentials, `CELO_CHAIN_ID=11142220`, a
 Celo Sepolia `CELO_RPC_URL`, `AUTH_SESSION_SECRET`, both Upstash REST variables,
 and `CELOHT_ALLOWED_ORIGIN=https://app.celoht.com`. Confirm that the Supabase
-`system_health` table is readable using the service-role key. The health probe
-is read-only and the service never returns mock data when a dependency fails.
+`profiles` table is readable using the service-role key. The response's safe
+`diagnostics.database` code distinguishes table/schema, permission, credential,
+and query failures; raw Supabase messages are not returned or logged. The probe
+is read-only and does not require a separate `system_health` table.
 
 ## Wallet verification fails
 

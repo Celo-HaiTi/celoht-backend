@@ -71,7 +71,7 @@ async function run() {
     Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
   };
   try {
-    const response = await request(`${process.env.SUPABASE_URL}/rest/v1/system_health?select=id&limit=1`, {
+    const response = await request(`${process.env.SUPABASE_URL}/rest/v1/profiles?select=id&limit=1`, {
       headers: serviceHeaders,
     });
     record("Supabase service-role database access", response.ok, `HTTP ${response.status}`);
@@ -80,15 +80,18 @@ async function run() {
   }
 
   try {
-    const response = await request(`${process.env.SUPABASE_URL}/rest/v1/system_health?select=id&limit=1`, {
+    const response = await request(`${process.env.SUPABASE_URL}/rest/v1/profiles?select=id&limit=1`, {
       headers: {
         apikey: process.env.SUPABASE_ANON_KEY,
         Authorization: `Bearer ${process.env.SUPABASE_ANON_KEY}`,
       },
     });
-    record("Supabase RLS denies anonymous health-table access", response.status === 401 || response.status === 403, `HTTP ${response.status}`);
+    const body = await response.json().catch(() => null);
+    const noProfileRowsExposed =
+      response.status === 401 || response.status === 403 || (response.ok && Array.isArray(body) && body.length === 0);
+    record("Supabase RLS prevents anonymous profile reads", noProfileRowsExposed, `HTTP ${response.status}`);
   } catch {
-    record("Supabase RLS denies anonymous health-table access", false, "request failed; verify URL and credentials");
+    record("Supabase RLS prevents anonymous profile reads", false, "request failed; verify URL and credentials");
   }
 
   try {
