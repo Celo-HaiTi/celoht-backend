@@ -16,8 +16,12 @@ See `celoht-supabase/OWNERSHIP.md` — this backend owns every table
 marked BACKEND OWNED and reads (never writes) tables marked INDEXER OWNED.
 
 The governance workflow tables are owned and migrated by
-`celoht-governance/migrations/0013_governance_workflow.sql`; this backend does
-not currently expose governance mutation or execution endpoints.
+`celoht-governance/migrations/0013_governance_workflow.sql`. The Governance
+page submits wallet-signed votes directly to the official Celo Sepolia
+contract; this backend does not write governance votes, create proposals, or
+execute outcomes. Public proposal presentation reconciles the
+indexer-owned `governance_proposals` and confirmed `blockchain_transactions`
+with contract reads.
 
 ## Readiness probe
 `GET /api/v1/health` performs a read-only `id` query against `profiles` using

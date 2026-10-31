@@ -18,6 +18,7 @@ tags:
   - name: Agents
   - name: Education
   - name: Reforestation
+  - name: Governance
   - name: Blockchain
   - name: Admin
 paths:
@@ -116,7 +117,10 @@ paths:
       requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/ContributionReceipt' } } } }
       responses: { '200': { $ref: '#/components/responses/Success' }, '202': { description: Receipt or indexer confirmation pending } }
   /governance:
-    get: { tags: [Blockchain], responses: { '200': { $ref: '#/components/responses/Success' } } }
+    get:
+      tags: [Governance]
+      parameters: [{ in: query, name: wallet, schema: { type: string, pattern: '^0x[0-9a-fA-F]{40}$' }, description: Optional wallet address for on-chain hasVoted, USDm balance/allowance, and proposer-role reads }]
+      responses: { '200': { $ref: '#/components/responses/Success' }, '422': { $ref: '#/components/responses/ValidationError' }, '503': { $ref: '#/components/responses/Unavailable' } }
   /admin/kyc:
     get: { tags: [Admin], security: [{ session: [] }], responses: { '200': { $ref: '#/components/responses/Success' }, '403': { $ref: '#/components/responses/Forbidden' } } }
     post: { tags: [Admin], security: [{ session: [] }], responses: { '200': { $ref: '#/components/responses/Success' }, '403': { $ref: '#/components/responses/Forbidden' } } }

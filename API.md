@@ -50,7 +50,12 @@ Errors also return the same `requestId` in the `x-request-id` response header.
 | POST | `/reforestation/evidence` | approved agent session | Submit planting date, coordinates, notes, and private storage paths for review |
 | GET | `/reforestation/contributions` | session | Caller's indexed contributions whose transactions are confirmed |
 | POST | `/reforestation/contributions` | session | Check a Celo Sepolia receipt and match it to the caller's indexed contribution |
-| GET | `/governance` | none | Proposals with 1-wallet-1-vote tallies |
+| GET | `/governance` | none | Official Celo Sepolia contract proposals, exact results/windows, confirmed activity, and optional wallet vote/fee state |
+
+Governance voting is submitted directly by the connected wallet to the official
+contract; the backend never holds a signer or writes votes. See
+[GOVERNANCE.md](GOVERNANCE.md) for role restrictions and transaction flow.
+The browser interface is served at `/governance`.
 
 ## Admin (reviewer/admin only, server-side enforced)
 | Method | Path | Role | Description |

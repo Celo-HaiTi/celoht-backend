@@ -11,6 +11,7 @@ describe("GET /", () => {
       service: "CeloHT backend",
       apiBasePath: "/api/v1",
       healthPath: "/api/v1/health",
+      governancePath: "/governance",
     });
     expect(body.data).not.toHaveProperty("status", "healthy");
   });

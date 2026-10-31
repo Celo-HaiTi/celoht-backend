@@ -35,6 +35,7 @@ npm run build
 - `ADMIN.md` — admin/reviewer capabilities and audit trail
 - `KYC.md` — KYC submission and review flow
 - `INDEXER_INTEGRATION.md` — the read-only boundary with `celoht-indexer`
+- `GOVERNANCE.md` — the verified Sepolia governance contract, voting UX, roles, and advisory-only result boundary
 - `DEPLOYMENT.md`, `ENVIRONMENT.md`, and `OPERATIONS.md` — production operations
 - `CONTRIBUTING.md` and `TROUBLESHOOTING.md` — contribution and support guidance
 

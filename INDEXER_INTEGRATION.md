@@ -27,3 +27,10 @@ also queries the configured Celo Sepolia RPC and requires the configured
 confirmation depth before reconciling the matching project, wallet, and
 transaction hash. The API never inserts a contribution or transaction row;
 the indexer remains the source of truth.
+
+## Governance reads
+The Governance API obtains proposal windows, finalization state, and vote
+totals directly from the official Celo Sepolia `CeloHTGovernance` contract.
+It uses confirmed `blockchain_transactions` events for activity history and
+never writes to `governance_proposals`, `governance_activity`, or
+`blockchain_transactions`. Contract state wins over any stale projection.
