@@ -6,6 +6,7 @@ export type AuditAction =
   | "agent_approval"
   | "agent_suspension"
   | "agent_rejection"
+  | "evidence_submission"
   | "evidence_verification"
   | "evidence_rejection"
   | "course_publication"

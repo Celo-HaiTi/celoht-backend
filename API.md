@@ -31,6 +31,7 @@ Errors also return the same `requestId` in the `x-request-id` response header.
 | POST | `/agents` | session | Apply to become an agent |
 | GET | `/agents/kyc` | session | Caller's own KYC submissions |
 | POST | `/agents/kyc` | session | Submit a KYC document reference |
+| GET | `/agents/reforestation/evidence` | agent session | Track the caller's own planting report review states |
 
 ## Education
 | Method | Path | Auth | Description |
@@ -40,12 +41,15 @@ Errors also return the same `requestId` in the `x-request-id` response header.
 | POST | `/progress` | session | Upsert lesson completion |
 | GET | `/certificates` | session | Caller's own issued certificates |
 
-## On-chain data (read-only)
+## Blockchain
 | Method | Path | Auth | Description |
 |---|---|---|---|
 | GET | `/transactions` | none | Indexed on-chain events (optionally filter by `wallet`) |
-| GET | `/reforestation` | none | Published projects with contribution + verified-impact counts |
-| GET | `/reforestation/evidence` | none | Verified evidence only |
+| GET | `/reforestation` | none | Published projects, confirmed contribution records, and verified planting reports |
+| GET | `/reforestation/evidence` | none | Verified planting reports without private file paths |
+| POST | `/reforestation/evidence` | approved agent session | Submit planting date, coordinates, notes, and private storage paths for review |
+| GET | `/reforestation/contributions` | session | Caller's indexed contributions whose transactions are confirmed |
+| POST | `/reforestation/contributions` | session | Check a Celo Sepolia receipt and match it to the caller's indexed contribution |
 | GET | `/governance` | none | Proposals with 1-wallet-1-vote tallies |
 
 ## Admin (reviewer/admin only, server-side enforced)
@@ -54,7 +58,8 @@ Errors also return the same `requestId` in the `x-request-id` response header.
 | GET | `/admin/kyc` | reviewer, admin | Pending KYC queue |
 | POST | `/admin/kyc` | reviewer, admin | Approve/reject a KYC submission |
 | POST | `/admin/agents` | admin | Approve/suspend/reject an agent |
-| POST | `/admin/evidence` | reviewer, admin | Verify/reject reforestation evidence |
+| GET | `/admin/evidence` | reviewer, admin | Pending planting reports with short-lived private file links |
+| POST | `/admin/evidence` | reviewer, admin | Verify/reject a pending planting report |
 | GET | `/admin/audit-logs` | admin | Read audit trail (no write endpoint exists) |
 
 ## Health
@@ -64,3 +69,5 @@ Errors also return the same `requestId` in the `x-request-id` response header.
 
 The backend reads indexer-owned blockchain tables but never writes them. It
 does not expose transaction-signing or treasury private-key operations.
+See [REFORESTATION.md](REFORESTATION.md) for the pilot flow and required
+Supabase storage/database setup.

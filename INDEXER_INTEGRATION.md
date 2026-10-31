@@ -18,3 +18,12 @@ write responsibility for the same tables (`celoht-supabase/docs/OWNERSHIP.md`).
 - Never infer verified physical reforestation impact from
   `reforestation_contributions` alone — that inference is exactly what
   `reforestation_evidence` + the admin verification flow exists to prevent.
+
+## Reforestation contribution reads
+The reforestation API joins indexer-owned contribution references to
+`blockchain_transactions` and includes only rows marked `confirmed`. Wallet
+history is scoped to the authenticated profile's wallet. Receipt confirmation
+also queries the configured Celo Sepolia RPC and requires the configured
+confirmation depth before reconciling the matching project, wallet, and
+transaction hash. The API never inserts a contribution or transaction row;
+the indexer remains the source of truth.

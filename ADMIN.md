@@ -2,6 +2,8 @@
 
 ## Reviewer capabilities
 - Approve/reject KYC submissions (`POST /api/v1/admin/kyc`)
+- Review pending planting reports and access evidence files through expiring
+  signed URLs (`GET /api/v1/admin/evidence`)
 - Verify/reject reforestation evidence (`POST /api/v1/admin/evidence`)
 
 ## Admin-only capabilities
@@ -14,7 +16,8 @@
   relying on it in production)
 
 ## Audit trail guarantee
-Every admin/reviewer decision route calls `writeAuditLog()` in the same
-request as the state-changing update, recording actor, action, target, and
-relevant metadata. `audit_logs` has no update/delete endpoint anywhere in
-this backend, matching the append-only RLS policy in `celoht-supabase`.
+Every evidence submission and admin/reviewer decision calls
+`writeAuditLog()` in the same request as the state-changing update, recording
+actor, action, target, and relevant metadata. `audit_logs` has no
+update/delete endpoint anywhere in this backend, matching the append-only RLS
+policy in `celoht-supabase`.

@@ -73,6 +73,8 @@ paths:
         required: true
         content: { application/json: { schema: { $ref: '#/components/schemas/KycSubmission' } } }
       responses: { '201': { $ref: '#/components/responses/Success' } }
+  /agents/reforestation/evidence:
+    get: { tags: [Reforestation], security: [{ session: [] }], responses: { '200': { $ref: '#/components/responses/Success' }, '403': { $ref: '#/components/responses/Forbidden' } } }
   /courses:
     get:
       tags: [Education]
@@ -101,6 +103,18 @@ paths:
       responses: { '200': { $ref: '#/components/responses/Success' } }
   /reforestation/evidence:
     get: { tags: [Reforestation], responses: { '200': { $ref: '#/components/responses/Success' } } }
+    post:
+      tags: [Reforestation]
+      security: [{ session: [] }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/PlantingEvidenceSubmission' } } } }
+      responses: { '201': { $ref: '#/components/responses/Success' }, '403': { $ref: '#/components/responses/Forbidden' } }
+  /reforestation/contributions:
+    get: { tags: [Reforestation], security: [{ session: [] }], responses: { '200': { $ref: '#/components/responses/Success' } } }
+    post:
+      tags: [Reforestation]
+      security: [{ session: [] }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/ContributionReceipt' } } } }
+      responses: { '200': { $ref: '#/components/responses/Success' }, '202': { description: Receipt or indexer confirmation pending } }
   /governance:
     get: { tags: [Blockchain], responses: { '200': { $ref: '#/components/responses/Success' } } }
   /admin/kyc:
@@ -109,6 +123,7 @@ paths:
   /admin/agents:
     post: { tags: [Admin], security: [{ session: [] }], responses: { '200': { $ref: '#/components/responses/Success' }, '403': { $ref: '#/components/responses/Forbidden' } } }
   /admin/evidence:
+    get: { tags: [Admin], security: [{ session: [] }], responses: { '200': { $ref: '#/components/responses/Success' }, '403': { $ref: '#/components/responses/Forbidden' } } }
     post: { tags: [Admin], security: [{ session: [] }], responses: { '200': { $ref: '#/components/responses/Success' }, '403': { $ref: '#/components/responses/Forbidden' } } }
   /admin/audit-logs:
     get: { tags: [Admin], security: [{ session: [] }], responses: { '200': { $ref: '#/components/responses/Success' }, '403': { $ref: '#/components/responses/Forbidden' } } }
@@ -126,6 +141,8 @@ components:
     ProfileUpdate: { type: object, properties: { displayName: { type: string, maxLength: 120 }, avatarUrl: { type: string, maxLength: 2048 } }, additionalProperties: false }
     KycSubmission: { type: object, required: [documentType, storagePath], properties: { documentType: { type: string, maxLength: 60 }, storagePath: { type: string } }, additionalProperties: false }
     ProgressUpdate: { type: object, required: [lessonId, completed], properties: { lessonId: { type: string, format: uuid }, completed: { type: boolean } }, additionalProperties: false }
+    PlantingEvidenceSubmission: { type: object, required: [projectId, plantingDate, latitude, longitude, storagePaths], properties: { projectId: { type: string, format: uuid }, plantingDate: { type: string, format: date }, latitude: { type: number, minimum: -90, maximum: 90 }, longitude: { type: number, minimum: -180, maximum: 180 }, notes: { type: string, maxLength: 4000 }, storagePaths: { type: array, minItems: 1, maxItems: 10, items: { type: string } } }, additionalProperties: false }
+    ContributionReceipt: { type: object, required: [projectId, transactionHash], properties: { projectId: { type: string, format: uuid }, transactionHash: { type: string, pattern: '^0x[0-9a-fA-F]{64}$' } }, additionalProperties: false }
     Error: { type: object, required: [error], properties: { error: { type: object, required: [code, message, requestId], properties: { code: { type: string }, message: { type: string }, details: {}, requestId: { type: string, format: uuid } } } } }
   responses:
     Success: { description: Successful response, content: { application/json: { schema: { type: object, required: [data], properties: { data: {} } } } } }
