@@ -2,6 +2,9 @@
 
 Base path: `/api/v1`
 
+`GET /` returns service discovery (`apiBasePath` and `healthPath`); it does not
+assert readiness. Use `GET /api/v1/health` to check dependencies.
+
 All responses are `{ "data": ... }` on success or
 `{ "error": { "code", "message", "details", "requestId" } }` on failure.
 Errors also return the same `requestId` in the `x-request-id` response header.
