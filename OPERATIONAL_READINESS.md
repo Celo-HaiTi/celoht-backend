@@ -15,8 +15,8 @@ remain owned by their canonical Celo-HaiTi repositories.
 | Indexer-backed reads | Backend read boundary is documented; canonical indexer manifests and tables exist | Verify indexed records, checkpoint, restart, and API responses against a live stack | No, owned externally | No | NEEDS INTEGRATION |
 | Governance mutations and execution | Governance schema and service exist in `celoht-governance`; this backend exposes read-only proposal presentation | Integrate the canonical governance API or explicitly keep mutations outside this backend | No, owned externally | No | NEEDS INTEGRATION |
 | Chain configuration | Celo Sepolia chain ID is enforced; canonical contract/indexer manifests agree on addresses | Add live RPC and bytecode verification to deployment smoke tests | Partly | No | NEEDS TESTING |
-| Rate limiting | In-memory limiter works for one process and unit tests | Deploy a shared Redis or edge-store limiter before multi-instance production | Yes, pending infrastructure configuration | No | NEEDS IMPLEMENTATION |
-| Health/readiness | Config, database reachability, and health snapshot persistence are checked | Verify from deployed service and alert on 503 | Partly | No | NEEDS DEPLOYMENT |
+| Rate limiting | Production uses the shared Upstash store and fails closed if unavailable | Configure Upstash in Render and verify health/smoke checks | Partly | No | NEEDS DEPLOYMENT |
+| Health/readiness | Required config, read-only Supabase access, Sepolia RPC, and production rate-limit store are checked | Verify from deployed service and alert on 503 | Partly | No | NEEDS DEPLOYMENT |
 | Deployment | Render blueprint and CI build pipeline exist | Configure secrets, deploy, restart, and verify health/API smoke tests | Partly | No | NEEDS DEPLOYMENT |
 | Dependency security | Production `npm audit` is clean at high severity | Keep CI audit blocking rather than informational | Yes | No | COMPLETE |
 | Independent review | No independent contract, treasury, penetration, or legal review is represented here | Obtain qualified independent reviews after technical readiness | No | Yes | PENDING EXTERNAL AUDIT |

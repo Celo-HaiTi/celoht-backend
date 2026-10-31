@@ -18,6 +18,8 @@
 | `AUTH_SESSION_TTL_SECONDS` | no (default 86400) | Session lifetime |
 | `UPSTASH_REDIS_REST_URL` | required in production | Shared Redis REST endpoint for atomic rate limits |
 | `UPSTASH_REDIS_REST_TOKEN` | required in production | **Secret.** Shared Redis REST authentication token |
+| `CELOHT_ALLOWED_ORIGIN` | required in production | Must be `https://app.celoht.com`; credentialed CORS allowlist |
+| `PORT` | supplied by Render | Do not configure manually; `npm start` binds to this port on `0.0.0.0` |
 
 See `docs/SECURITY.md` for how these are validated and why the service
 fails closed if any required value is missing.

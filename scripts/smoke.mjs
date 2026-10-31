@@ -8,6 +8,7 @@ const required = [
   "CELO_RPC_URL",
   "UPSTASH_REDIS_REST_URL",
   "UPSTASH_REDIS_REST_TOKEN",
+  "CELOHT_ALLOWED_ORIGIN",
 ];
 
 const missing = required.filter((name) => !process.env[name]);
@@ -43,7 +44,7 @@ async function rpc(method, params = []) {
   });
   if (!response.ok) throw new Error(`HTTP ${response.status}`);
   const body = await response.json();
-  if (body.error) throw new Error(body.error.message ?? "JSON-RPC error");
+  if (body.error) throw new Error("JSON-RPC request failed");
   return body.result;
 }
 
@@ -54,15 +55,15 @@ async function run() {
     const chainId = await rpc("eth_chainId");
     const expected = `0x${Number(process.env.CELO_CHAIN_ID).toString(16)}`;
     record("Celo Sepolia chain ID", chainId === expected, `${chainId} (expected ${expected})`);
-  } catch (error) {
-    record("Celo Sepolia RPC connectivity", false, error.message);
+  } catch {
+    record("Celo Sepolia RPC connectivity", false, "request failed; verify endpoint and credentials");
   }
 
   try {
     const block = await rpc("eth_blockNumber");
     record("Celo latest block", /^0x[0-9a-f]+$/i.test(block), block);
-  } catch (error) {
-    record("Celo latest block", false, error.message);
+  } catch {
+    record("Celo latest block", false, "request failed; verify endpoint and credentials");
   }
 
   const serviceHeaders = {
@@ -74,8 +75,8 @@ async function run() {
       headers: serviceHeaders,
     });
     record("Supabase service-role database access", response.ok, `HTTP ${response.status}`);
-  } catch (error) {
-    record("Supabase service-role database access", false, error.message);
+  } catch {
+    record("Supabase service-role database access", false, "request failed; verify URL and credentials");
   }
 
   try {
@@ -86,8 +87,8 @@ async function run() {
       },
     });
     record("Supabase RLS denies anonymous health-table access", response.status === 401 || response.status === 403, `HTTP ${response.status}`);
-  } catch (error) {
-    record("Supabase RLS denies anonymous health-table access", false, error.message);
+  } catch {
+    record("Supabase RLS denies anonymous health-table access", false, "request failed; verify URL and credentials");
   }
 
   try {
@@ -100,22 +101,22 @@ async function run() {
       body: JSON.stringify(["EVAL", "local count = redis.call('INCR', KEYS[1]); redis.call('PEXPIRE', KEYS[1], ARGV[1]); return count", 1, `celoht:smoke:${Date.now()}`, 10000]),
     });
     record("Shared rate-limit store", response.ok, `HTTP ${response.status}`);
-  } catch (error) {
-    record("Shared rate-limit store", false, error.message);
+  } catch {
+    record("Shared rate-limit store", false, "request failed; verify endpoint and credentials");
   }
 
   try {
     const response = await request(`${backendUrl}/api/v1/health`);
     record("Backend readiness", response.status === 200, `HTTP ${response.status}`);
-  } catch (error) {
-    record("Backend readiness", false, error.message);
+  } catch {
+    record("Backend readiness", false, "request failed; verify BACKEND_URL and deployment status");
   }
 
   try {
     const response = await request(`${backendUrl}/api/v1/profile`);
     record("Protected endpoint rejects unauthenticated request", response.status === 401 || response.status === 403, `HTTP ${response.status}`);
-  } catch (error) {
-    record("Protected endpoint rejects unauthenticated request", false, error.message);
+  } catch {
+    record("Protected endpoint rejects unauthenticated request", false, "request failed; verify BACKEND_URL");
   }
 
   if (process.env.SMOKE_WALLET_ADDRESS) {
@@ -126,8 +127,8 @@ async function run() {
         body: JSON.stringify({ walletAddress: process.env.SMOKE_WALLET_ADDRESS }),
       });
       record("Wallet nonce issuance", response.status === 200, `HTTP ${response.status}`);
-    } catch (error) {
-      record("Wallet nonce issuance", false, error.message);
+    } catch {
+      record("Wallet nonce issuance", false, "request failed; verify BACKEND_URL");
     }
   }
 
@@ -140,7 +141,7 @@ async function run() {
   }
 }
 
-run().catch((error) => {
-  console.error(`NOT READY: smoke runner failed: ${error.message}`);
+run().catch(() => {
+  console.error("NOT READY: smoke runner failed; verify configuration and connectivity.");
   process.exitCode = 1;
 });

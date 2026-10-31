@@ -2,10 +2,14 @@
 
 ## Health returns 503
 
-Check `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `CELO_CHAIN_ID`,
-`CELO_RPC_URL`, and `AUTH_SESSION_SECRET`. Then check Supabase connectivity and
-the `system_health` table. The service intentionally does not return mock data
-when a dependency is unavailable.
+Read the response's `error.details` for missing or invalid variable names and
+dependency statuses. Check Render logs for `health.configuration_invalid` or
+`health.dependency_unavailable`; diagnostics never include secret values.
+Production requires valid Supabase credentials, `CELO_CHAIN_ID=11142220`, a
+Celo Sepolia `CELO_RPC_URL`, `AUTH_SESSION_SECRET`, both Upstash REST variables,
+and `CELOHT_ALLOWED_ORIGIN=https://app.celoht.com`. Confirm that the Supabase
+`system_health` table is readable using the service-role key. The health probe
+is read-only and the service never returns mock data when a dependency fails.
 
 ## Wallet verification fails
 

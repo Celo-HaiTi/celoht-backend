@@ -42,7 +42,7 @@ Final status: NOT READY
 - File/path: [app/api/v1/health/route.ts](app/api/v1/health/route.ts)
 - Problem: Health checks are implemented correctly, but they cannot be verified as production-ready without the actual Supabase and RPC dependencies present.
 - Security/business impact: The app may be healthy in code while the live services remain unavailable; the code intentionally returns a 503 when dependencies fail, which is the correct behavior but requires external validation.
-- Repair performed: Health handling was hardened to return 503 when configuration or database health persistence fails.
+- Repair performed: Readiness now reports safe configuration diagnostics, checks read-only Supabase access, verifies the Sepolia RPC chain ID and production rate-limit store, and avoids health-probe writes.
 - Verification performed: Repository-level tests and build passed; live dependency validation remains blocked externally.
 - Remaining dependency: Live disposable Supabase project and Celo Sepolia RPC access.
 

@@ -1,16 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const ALLOWED_ORIGIN = process.env.CELOHT_ALLOWED_ORIGIN;
-
 export function proxy(request: NextRequest) {
   const requestId = request.headers.get("x-request-id") ?? crypto.randomUUID();
   const origin = request.headers.get("origin");
+  const allowedOrigin = process.env.CELOHT_ALLOWED_ORIGIN;
   const corsHeaders: Record<string, string> = {};
 
-  if (ALLOWED_ORIGIN && origin === ALLOWED_ORIGIN) {
-    corsHeaders["access-control-allow-origin"] = ALLOWED_ORIGIN;
+  if (allowedOrigin && origin === allowedOrigin) {
+    corsHeaders["access-control-allow-origin"] = allowedOrigin;
     corsHeaders["access-control-allow-credentials"] = "true";
-    corsHeaders["access-control-allow-methods"] = "GET,POST,PATCH,OPTIONS";
+    corsHeaders["access-control-allow-methods"] = "GET,POST,PUT,PATCH,DELETE,OPTIONS";
     corsHeaders["access-control-allow-headers"] = "content-type,x-request-id";
     corsHeaders.vary = "Origin";
   }

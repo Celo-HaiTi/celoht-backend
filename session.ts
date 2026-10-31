@@ -57,6 +57,17 @@ export function issueSessionToken(profileId: string, walletAddress: string): str
   return `${encoded}.${sig}`;
 }
 
+export function getSessionCookieOptions() {
+  const production = process.env.NODE_ENV === "production";
+  return {
+    httpOnly: true,
+    secure: production,
+    sameSite: production ? ("none" as const) : ("lax" as const),
+    path: "/",
+    maxAge: Number(process.env.AUTH_SESSION_TTL_SECONDS ?? 86400),
+  };
+}
+
 export class SessionError extends Error {}
 
 export function verifySessionToken(token: string): SessionPayload {

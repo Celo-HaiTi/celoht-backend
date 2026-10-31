@@ -17,7 +17,7 @@ Key architecture points:
 - Server-only Supabase access is isolated in `src/lib/supabase/server.ts` and guarded by `server-only`.
 - Auth/session logic lives in `session.ts` and `authorization.ts`.
 - Business logic route handlers use `withApiErrorHandling()` and `apiError()` for consistent fail-closed responses.
-- Health and readiness are represented by `GET /api/v1/health`, which returns `503` if required configuration or the database is unavailable.
+- Health and readiness are represented by `GET /api/v1/health`, which returns `503` with safe diagnostics if configuration, Supabase, the Celo Sepolia RPC, or the configured production rate-limit store is unavailable.
 
 ## Existing Functionality
 
@@ -90,7 +90,7 @@ The repository contains deployment configuration and health handling for a singl
 
 - `render.yaml` defines a web service deployment shape.
 - `DEPLOYMENT.md` documents required environment values and build/run order.
-- `GET /api/v1/health` checks configuration and database reachability.
+- `GET /api/v1/health` checks production configuration, read-only Supabase access, the Celo Sepolia chain ID, and the production rate-limit store.
 
 Current deployment status cannot be verified beyond repository configuration because live environment variables and external service deployments are not present in this workspace.
 

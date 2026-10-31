@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { issueSessionToken, verifySessionToken, SessionError } from "@/lib/auth/session";
+import { getSessionCookieOptions, issueSessionToken, verifySessionToken, SessionError } from "@/lib/auth/session";
 import { __resetConfigCacheForTests } from "@/lib/config";
 
 beforeEach(() => {
@@ -14,6 +14,21 @@ beforeEach(() => {
 });
 
 describe("session tokens", () => {
+  it("uses secure, HTTP-only cross-site cookies in production", () => {
+    vi.stubEnv("NODE_ENV", "production");
+    try {
+      expect(getSessionCookieOptions()).toEqual({
+        httpOnly: true,
+        secure: true,
+        sameSite: "none",
+        path: "/",
+        maxAge: 86400,
+      });
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
   it("round-trips a valid token", () => {
     const token = issueSessionToken("profile-1", `0x${"a".repeat(40)}`);
     const payload = verifySessionToken(token);

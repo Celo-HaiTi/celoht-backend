@@ -55,7 +55,7 @@ export async function withApiErrorHandling(
     const { ConfigurationError } = await import("@/lib/config");
     if (err instanceof ConfigurationError) {
       // eslint-disable-next-line no-console
-      console.error("[config] fail-closed:", err.message);
+      console.error("[config] fail-closed:", err.variables);
       return apiError("service_unavailable", "Service is not fully configured.");
     }
 
@@ -66,7 +66,7 @@ export async function withApiErrorHandling(
     }
 
     // eslint-disable-next-line no-console
-    console.error("[unhandled]", err);
+    console.error("[unhandled]", err instanceof Error ? err.name : typeof err);
     return apiError("internal_error", "An unexpected error occurred.");
   }
 }

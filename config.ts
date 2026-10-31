@@ -25,12 +25,15 @@ const ConfigSchema = z.object({
   AUTH_SESSION_SECRET: z.string().min(32, "AUTH_SESSION_SECRET must be at least 32 characters"),
   AUTH_NONCE_TTL_SECONDS: z.coerce.number().int().positive().default(300),
   AUTH_SESSION_TTL_SECONDS: z.coerce.number().int().positive().default(86400),
+  UPSTASH_REDIS_REST_URL: z.string().url().optional(),
+  UPSTASH_REDIS_REST_TOKEN: z.string().min(1).optional(),
+  CELOHT_ALLOWED_ORIGIN: z.string().url().optional(),
 });
 
 export type Config = z.infer<typeof ConfigSchema>;
 
 export class ConfigurationError extends Error {
-  constructor(message: string) {
+  constructor(message: string, readonly variables: string[]) {
     super(message);
     this.name = "ConfigurationError";
   }
@@ -50,22 +53,44 @@ export function getConfig(): Config {
 
   const parsed = ConfigSchema.safeParse(process.env);
   if (!parsed.success) {
+    const variables = [...new Set(parsed.error.issues.map((issue) => issue.path.join(".")))];
     throw new ConfigurationError(
-      `Missing or invalid required configuration: ${parsed.error.issues
-        .map((i) => i.path.join("."))
-        .join(", ")}`
+      `Missing or invalid required configuration: ${variables.join(", ")}`,
+      variables
     );
+  }
+
+  if (process.env.NODE_ENV === "production") {
+    const missingProductionVariables = [
+      "UPSTASH_REDIS_REST_URL",
+      "UPSTASH_REDIS_REST_TOKEN",
+      "CELOHT_ALLOWED_ORIGIN",
+    ].filter((variable) => !parsed.data[variable as keyof typeof parsed.data]);
+    if (missingProductionVariables.length > 0) {
+      throw new ConfigurationError(
+        `Missing required production configuration: ${missingProductionVariables.join(", ")}`,
+        missingProductionVariables
+      );
+    }
+
+    if (parsed.data.CELOHT_ALLOWED_ORIGIN !== "https://app.celoht.com") {
+      throw new ConfigurationError(
+        "CELOHT_ALLOWED_ORIGIN must be https://app.celoht.com in production.",
+        ["CELOHT_ALLOWED_ORIGIN"]
+      );
+    }
   }
 
   if (!SUPPORTED_CHAIN_IDS.includes(parsed.data.CELO_CHAIN_ID as (typeof SUPPORTED_CHAIN_IDS)[number])) {
     throw new ConfigurationError(
       `CELO_CHAIN_ID=${parsed.data.CELO_CHAIN_ID} is not an officially configured CeloHT network. ` +
-        `Refusing to start against an unconfigured chain (fail closed).`
+        `Refusing to start against an unconfigured chain (fail closed).`,
+      ["CELO_CHAIN_ID"]
     );
   }
 
   if (parsed.data.CELO_CHAIN_ID !== 11142220) {
-    throw new ConfigurationError("Celo Sepolia requires CELO_CHAIN_ID=11142220.");
+    throw new ConfigurationError("Celo Sepolia requires CELO_CHAIN_ID=11142220.", ["CELO_CHAIN_ID"]);
   }
 
   cached = parsed.data;

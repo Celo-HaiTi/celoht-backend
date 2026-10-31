@@ -56,7 +56,7 @@ Errors also return the same `requestId` in the `x-request-id` response header.
 ## Health
 | Method | Path | Auth | Description |
 |---|---|---|---|
-| GET | `/health` | none | 200 only if config valid and DB reachable; otherwise 503 |
+| GET | `/health` | none | 200 only if config, Supabase, Celo Sepolia RPC, and production rate-limit store are healthy; otherwise 503 |
 
 The backend reads indexer-owned blockchain tables but never writes them. It
 does not expose transaction-signing or treasury private-key operations.

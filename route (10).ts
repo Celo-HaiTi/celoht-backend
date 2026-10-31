@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import { apiError, apiOk, withApiErrorHandling } from "@/lib/errors";
 import { VerifyRequestSchema } from "@/schemas/auth";
 import { consumeChallenge, getChallenge, ChallengeError } from "@/lib/auth/nonce";
-import { verifyWalletSignature, issueSessionToken } from "@/lib/auth/session";
+import { verifyWalletSignature, issueSessionToken, getSessionCookieOptions } from "@/lib/auth/session";
 import { getServiceRoleClient } from "@/lib/supabase/server";
 import { SESSION_COOKIE_NAME } from "@/lib/auth/authorization";
 import { checkRateLimit } from "@/lib/rateLimit";
@@ -74,13 +74,7 @@ export async function POST(req: NextRequest) {
 
     const token = issueSessionToken(profileId, wallet);
     const res = apiOk({ profileId, walletAddress: wallet });
-    res.cookies.set(SESSION_COOKIE_NAME, token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      path: "/",
-      maxAge: Number(process.env.AUTH_SESSION_TTL_SECONDS ?? 86400),
-    });
+    res.cookies.set(SESSION_COOKIE_NAME, token, getSessionCookieOptions());
     return res;
   });
 }

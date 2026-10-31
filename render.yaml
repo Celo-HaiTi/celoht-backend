@@ -10,6 +10,8 @@ services:
     envVars:
       - key: NODE_VERSION
         value: "20"
+      - key: NODE_ENV
+        value: production
       - key: SUPABASE_URL
         sync: false
       - key: SUPABASE_ANON_KEY
@@ -43,4 +45,4 @@ services:
       - key: UPSTASH_REDIS_REST_TOKEN
         sync: false
       - key: CELOHT_ALLOWED_ORIGIN
-        sync: false
+        value: https://app.celoht.com
