@@ -26,7 +26,7 @@ describe("GET /api/v1/health", () => {
       CELO_NETWORK: "celoSepolia",
       CELO_CHAIN_ID: "11142220",
       CELO_RPC_URL: "https://rpc.example.com",
-      AUTH_SESSION_SECRET: "s".repeat(32),
+      AUTH_SESSION_SECRET: "0123456789abcdef".repeat(4),
       UPSTASH_REDIS_REST_URL: "https://redis.example.com",
       UPSTASH_REDIS_REST_TOKEN: "redis-token",
       CELOHT_ALLOWED_ORIGIN: "https://app.celoht.com",
@@ -58,6 +58,44 @@ describe("GET /api/v1/health", () => {
     expect(response.status).toBe(503);
     expect(body.error.details.missingOrInvalidVariables).toContain("SUPABASE_SERVICE_ROLE_KEY");
     expect(JSON.stringify(body)).not.toContain("service-role-key");
+  });
+
+  it.each([
+    "SUPABASE_ANON_KEY",
+    "CELO_CHAIN_ID",
+    "AUTH_SESSION_SECRET",
+    "UPSTASH_REDIS_REST_URL",
+    "UPSTASH_REDIS_REST_TOKEN",
+  ])("reports missing %s without returning secret values", async (variable) => {
+    delete process.env[variable];
+    __resetConfigCacheForTests();
+    const log = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const response = await GET();
+    const body = await response.json();
+    const serialized = JSON.stringify(body);
+
+    expect(response.status).toBe(503);
+    expect(body.error.details.missingOrInvalidVariables).toContain(variable);
+    expect(serialized).not.toContain("service-role-key");
+    expect(serialized).not.toContain("redis-token");
+    expect(JSON.stringify(log.mock.calls)).not.toContain("service-role-key");
+    expect(JSON.stringify(log.mock.calls)).not.toContain("redis-token");
+  });
+
+  it("reports a weak session secret by variable name only", async () => {
+    const weakSecret = "a".repeat(32);
+    process.env.AUTH_SESSION_SECRET = weakSecret;
+    __resetConfigCacheForTests();
+    const log = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const response = await GET();
+    const body = await response.json();
+
+    expect(response.status).toBe(503);
+    expect(body.error.details.missingOrInvalidVariables).toContain("AUTH_SESSION_SECRET");
+    expect(JSON.stringify(body)).not.toContain(weakSecret);
+    expect(JSON.stringify(log.mock.calls)).not.toContain(weakSecret);
   });
 
   it("returns 503 when the configured RPC is not Celo Sepolia", async () => {

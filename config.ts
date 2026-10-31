@@ -22,7 +22,10 @@ const ConfigSchema = z.object({
   CELO_POLL_INTERVAL_MS: z.coerce.number().int().positive().default(10_000),
   CELO_RPC_RETRIES: z.coerce.number().int().nonnegative().default(3),
   CELO_RPC_TIMEOUT_MS: z.coerce.number().int().positive().default(5_000),
-  AUTH_SESSION_SECRET: z.string().min(32, "AUTH_SESSION_SECRET must be at least 32 characters"),
+  AUTH_SESSION_SECRET: z
+    .string()
+    .min(32, "AUTH_SESSION_SECRET must be at least 32 characters")
+    .refine((value) => new Set(value).size >= 16, "AUTH_SESSION_SECRET must contain at least 16 distinct characters"),
   AUTH_NONCE_TTL_SECONDS: z.coerce.number().int().positive().default(300),
   AUTH_SESSION_TTL_SECONDS: z.coerce.number().int().positive().default(86400),
   UPSTASH_REDIS_REST_URL: z.string().url().optional(),
@@ -57,6 +60,13 @@ export function getConfig(): Config {
     throw new ConfigurationError(
       `Missing or invalid required configuration: ${variables.join(", ")}`,
       variables
+    );
+  }
+
+  if (parsed.data.SUPABASE_ANON_KEY === parsed.data.SUPABASE_SERVICE_ROLE_KEY) {
+    throw new ConfigurationError(
+      "SUPABASE_ANON_KEY must be the anon/publishable key, not the service-role key.",
+      ["SUPABASE_ANON_KEY"]
     );
   }
 

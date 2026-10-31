@@ -22,7 +22,7 @@ describe("wallet challenge issuance", () => {
       SUPABASE_SERVICE_ROLE_KEY: "service-role-key",
       CELO_CHAIN_ID: "11142220",
       CELO_RPC_URL: "https://rpc.example.com",
-      AUTH_SESSION_SECRET: "s".repeat(32),
+      AUTH_SESSION_SECRET: "0123456789abcdef".repeat(4),
       AUTH_NONCE_TTL_SECONDS: "30",
     };
     __resetConfigCacheForTests();

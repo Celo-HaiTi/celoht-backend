@@ -16,16 +16,22 @@ set or hard-code it yourself.
 
 Set these values in the Render service's Environment page; do not commit them:
 - `SUPABASE_URL`
-- `SUPABASE_ANON_KEY`
+- `SUPABASE_ANON_KEY` (anon/publishable key; never the service-role key)
 - `SUPABASE_SERVICE_ROLE_KEY` (secret; server-side only)
 - `CELO_RPC_URL` (Celo Sepolia only)
-- `AUTH_SESSION_SECRET` (random secret, at least 32 characters)
+- `AUTH_SESSION_SECRET` (generate with `openssl rand -base64 32`; store only in Render)
 - `UPSTASH_REDIS_REST_URL`
 - `UPSTASH_REDIS_REST_TOKEN` (secret)
 
 The remaining `CELO_*` confirmation, polling, timeout, and retry settings have
 non-secret defaults in `render.yaml`. The backend rejects missing required
 production configuration and does not fall back to mock data.
+
+## Canonical API domain
+The verified canonical hostname is `api.celoht.com`; `api.coloht.com` is a
+misspelling and does not resolve. Configure `api.celoht.com` as the Render
+custom domain and use the DNS target shown by Render; do not guess or hard-code
+provider IP addresses.
 
 ## Build & run
 ```bash

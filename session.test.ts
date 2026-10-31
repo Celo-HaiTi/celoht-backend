@@ -9,7 +9,7 @@ beforeEach(() => {
   process.env.SUPABASE_SERVICE_ROLE_KEY = "service";
   process.env.CELO_CHAIN_ID = "11142220";
   process.env.CELO_RPC_URL = "https://rpc.example.com";
-  process.env.AUTH_SESSION_SECRET = "b".repeat(32);
+  process.env.AUTH_SESSION_SECRET = "0123456789abcdef".repeat(4);
   process.env.AUTH_SESSION_TTL_SECONDS = "86400";
 });
 

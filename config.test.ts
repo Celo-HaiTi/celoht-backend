@@ -16,7 +16,7 @@ const VALID_ENV: Record<string, string> = {
   SUPABASE_SERVICE_ROLE_KEY: "service-role-key",
   CELO_CHAIN_ID: "11142220",
   CELO_RPC_URL: "https://rpc.example.com",
-  AUTH_SESSION_SECRET: "a".repeat(32),
+  AUTH_SESSION_SECRET: "0123456789abcdef".repeat(4),
 };
 
 describe("getConfig (fail closed)", () => {
@@ -53,5 +53,15 @@ describe("getConfig (fail closed)", () => {
   it("rejects a session secret shorter than 32 characters", () => {
     Object.assign(process.env, VALID_ENV, { AUTH_SESSION_SECRET: "short" });
     expect(() => getConfig()).toThrow();
+  });
+
+  it("rejects a low-diversity session secret", () => {
+    Object.assign(process.env, VALID_ENV, { AUTH_SESSION_SECRET: "a".repeat(32) });
+    expect(() => getConfig()).toThrow(ConfigurationError);
+  });
+
+  it("rejects using the service-role key as the anon key", () => {
+    Object.assign(process.env, VALID_ENV, { SUPABASE_ANON_KEY: VALID_ENV.SUPABASE_SERVICE_ROLE_KEY });
+    expect(() => getConfig()).toThrow(ConfigurationError);
   });
 });
