@@ -33,6 +33,8 @@ npm run build
 - `AUTHENTICATION.md` — wallet nonce/signature sign-in flow
 - `AUTHORIZATION.md` — server-side role enforcement
 - `ADMIN.md` — admin/reviewer capabilities and audit trail
+- `AGENT_NETWORK.md` — application, public directory, verification, services, and registry ownership
+- `EDUCATION.md` — course, localization, quiz, progress, certificate, and administration workflows
 - `KYC.md` — KYC submission and review flow
 - `INDEXER_INTEGRATION.md` — the read-only boundary with `celoht-indexer`
 - `DEPLOYMENT.md`, `ENVIRONMENT.md`, and `OPERATIONS.md` — production operations
