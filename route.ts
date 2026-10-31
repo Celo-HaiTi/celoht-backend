@@ -4,10 +4,9 @@ import { requireActor } from "@/lib/auth/authorization";
 import { getServiceRoleClient } from "@/lib/supabase/server";
 
 /**
- * Certificates are never issued from a client request — only by a backend
- * job that has independently verified 100% completion of every lesson in a
- * course via course_progress. This route only lists the caller's own
- * already-issued certificates.
+ * Certificates are issued atomically by the quiz workflow after every lesson
+ * has a passing, server-validated quiz attempt. Legacy unlinked records are
+ * withheld because their completion cannot be verified against an enrollment.
  */
 export async function GET(req: NextRequest) {
   return withApiErrorHandling(async () => {
@@ -15,8 +14,10 @@ export async function GET(req: NextRequest) {
     const supabase = getServiceRoleClient();
     const { data, error } = await supabase
       .from("certificates")
-      .select("id, course_id, certificate_number, issued_at")
-      .eq("profile_id", actor.profileId);
+      .select("id, course_id, enrollment_id, certificate_number, issued_at, enrollments!inner(completed_at)")
+      .eq("profile_id", actor.profileId)
+      .not("enrollment_id", "is", null)
+      .not("enrollments.completed_at", "is", null);
     if (error) throw error;
     return apiOk(data);
   });

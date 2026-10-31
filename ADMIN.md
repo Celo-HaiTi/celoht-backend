@@ -7,6 +7,7 @@
 ## Admin-only capabilities
 - Everything a reviewer can do, plus:
 - Approve/suspend/reject an agent's off-chain status (`POST /api/v1/admin/agents`)
+- List, create, and edit draft education courses, then publish validated course content (`GET`, `POST /api/v1/admin/courses`)
 - Read the full audit trail (`GET /api/v1/admin/audit-logs`)
 - Change another profile's role (direct table update, service role — not yet
   exposed as its own endpoint in this initial implementation; add one with
@@ -18,3 +19,11 @@ Every admin/reviewer decision route calls `writeAuditLog()` in the same
 request as the state-changing update, recording actor, action, target, and
 relevant metadata. `audit_logs` has no update/delete endpoint anywhere in
 this backend, matching the append-only RLS policy in `celoht-supabase`.
+
+Course authors submit a complete localized course document. Haitian Creole
+(`ht`) is required for titles, descriptions, objectives, lesson content, quiz
+prompts, and answer choices; English (`en`), French (`fr`), and Spanish (`es`)
+translations are optional and fall back to Creole. Publishing requires at
+least one module, one lesson, and a non-empty quiz for every lesson. Published
+courses with enrollment history cannot be rewritten; archive them instead.
+Course creation and publication are audited.

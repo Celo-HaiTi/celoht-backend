@@ -76,8 +76,40 @@ paths:
   /courses:
     get:
       tags: [Education]
-      parameters: [{ $ref: '#/components/parameters/Limit' }, { $ref: '#/components/parameters/Offset' }]
+      parameters: [{ $ref: '#/components/parameters/Limit' }, { $ref: '#/components/parameters/Offset' }, { in: query, name: locale, schema: { type: string, enum: [ht, en, fr, es], default: ht } }]
       responses: { '200': { $ref: '#/components/responses/Success' } }
+  /courses/{courseId}:
+    get:
+      tags: [Education]
+      parameters: [{ in: path, name: courseId, required: true, schema: { type: string, format: uuid } }, { in: query, name: locale, schema: { type: string, enum: [ht, en, fr, es], default: ht } }]
+      responses: { '200': { $ref: '#/components/responses/Success' }, '404': { $ref: '#/components/responses/NotFound' } }
+  /courses/{courseId}/enrollments:
+    post:
+      tags: [Education]
+      security: [{ session: [] }]
+      parameters: [{ in: path, name: courseId, required: true, schema: { type: string, format: uuid } }]
+      responses: { '201': { $ref: '#/components/responses/Success' }, '401': { $ref: '#/components/responses/Unauthorized' } }
+  /courses/{courseId}/quizzes/{quizId}:
+    get:
+      tags: [Education]
+      security: [{ session: [] }]
+      parameters: [{ in: path, name: courseId, required: true, schema: { type: string, format: uuid } }, { in: path, name: quizId, required: true, schema: { type: string, format: uuid } }, { in: query, name: locale, schema: { type: string, enum: [ht, en, fr, es], default: ht } }]
+      responses: { '200': { $ref: '#/components/responses/Success' }, '404': { $ref: '#/components/responses/NotFound' } }
+  /courses/{courseId}/quizzes/{quizId}/submit:
+    post:
+      tags: [Education]
+      security: [{ session: [] }]
+      parameters: [{ in: path, name: courseId, required: true, schema: { type: string, format: uuid } }, { in: path, name: quizId, required: true, schema: { type: string, format: uuid } }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/QuizSubmission' } } }
+      responses: { '200': { $ref: '#/components/responses/Success' }, '422': { $ref: '#/components/responses/ValidationError' } }
+  /courses/{courseId}/results:
+    get:
+      tags: [Education]
+      security: [{ session: [] }]
+      parameters: [{ in: path, name: courseId, required: true, schema: { type: string, format: uuid } }, { in: query, name: locale, schema: { type: string, enum: [ht, en, fr, es], default: ht } }]
+      responses: { '200': { $ref: '#/components/responses/Success' }, '404': { $ref: '#/components/responses/NotFound' } }
   /progress:
     get: { tags: [Education], security: [{ session: [] }], responses: { '200': { $ref: '#/components/responses/Success' } } }
     post:
@@ -108,6 +140,19 @@ paths:
     post: { tags: [Admin], security: [{ session: [] }], responses: { '200': { $ref: '#/components/responses/Success' }, '403': { $ref: '#/components/responses/Forbidden' } } }
   /admin/agents:
     post: { tags: [Admin], security: [{ session: [] }], responses: { '200': { $ref: '#/components/responses/Success' }, '403': { $ref: '#/components/responses/Forbidden' } } }
+  /admin/courses:
+    get:
+      tags: [Admin]
+      security: [{ session: [] }]
+      parameters: [{ $ref: '#/components/parameters/Limit' }, { $ref: '#/components/parameters/Offset' }, { in: query, name: locale, schema: { type: string, enum: [ht, en, fr, es], default: ht } }]
+      responses: { '200': { $ref: '#/components/responses/Success' }, '403': { $ref: '#/components/responses/Forbidden' } }
+    post:
+      tags: [Admin]
+      security: [{ session: [] }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { type: object, required: [status, titleTranslations, descriptionTranslations, learningObjectives, modules], additionalProperties: false } } }
+      responses: { '200': { $ref: '#/components/responses/Success' }, '201': { $ref: '#/components/responses/Success' }, '403': { $ref: '#/components/responses/Forbidden' }, '422': { $ref: '#/components/responses/ValidationError' } }
   /admin/evidence:
     post: { tags: [Admin], security: [{ session: [] }], responses: { '200': { $ref: '#/components/responses/Success' }, '403': { $ref: '#/components/responses/Forbidden' } } }
   /admin/audit-logs:
@@ -125,10 +170,12 @@ components:
     VerifyRequest: { type: object, required: [walletAddress, nonce, signature], properties: { walletAddress: { type: string, pattern: '^0x[0-9a-fA-F]{40}$' }, nonce: { type: string, pattern: '^[0-9a-f]{64}$' }, signature: { type: string, pattern: '^0x[0-9a-fA-F]{130}$' } }, additionalProperties: false }
     ProfileUpdate: { type: object, properties: { displayName: { type: string, maxLength: 120 }, avatarUrl: { type: string, maxLength: 2048 } }, additionalProperties: false }
     KycSubmission: { type: object, required: [documentType, storagePath], properties: { documentType: { type: string, maxLength: 60 }, storagePath: { type: string } }, additionalProperties: false }
-    ProgressUpdate: { type: object, required: [lessonId, completed], properties: { lessonId: { type: string, format: uuid }, completed: { type: boolean } }, additionalProperties: false }
+    ProgressUpdate: { type: object, required: [enrollmentId, lessonId], properties: { enrollmentId: { type: string, format: uuid }, lessonId: { type: string, format: uuid } }, additionalProperties: false }
+    QuizSubmission: { type: object, required: [enrollmentId, answers], properties: { enrollmentId: { type: string, format: uuid }, answers: { type: array, minItems: 1, maxItems: 100, items: { type: object, required: [questionId, selectedOptionIndex], properties: { questionId: { type: string, format: uuid }, selectedOptionIndex: { type: integer, minimum: 0, maximum: 7 } }, additionalProperties: false } } }, additionalProperties: false }
     Error: { type: object, required: [error], properties: { error: { type: object, required: [code, message, requestId], properties: { code: { type: string }, message: { type: string }, details: {}, requestId: { type: string, format: uuid } } } } }
   responses:
     Success: { description: Successful response, content: { application/json: { schema: { type: object, required: [data], properties: { data: {} } } } } }
+    NotFound: { description: Resource not found, content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
     ValidationError: { description: Invalid request, content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
     Unauthorized: { description: Unauthenticated, content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
     Forbidden: { description: Insufficient role, content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }

@@ -35,10 +35,15 @@ Errors also return the same `requestId` in the `x-request-id` response header.
 ## Education
 | Method | Path | Auth | Description |
 |---|---|---|---|
-| GET | `/courses` | none | Published courses |
-| GET | `/progress` | session | Caller's own progress |
-| POST | `/progress` | session | Upsert lesson completion |
-| GET | `/certificates` | session | Caller's own issued certificates |
+| GET | `/courses?locale=ht\|en\|fr\|es` | none | Published courses with localized descriptions and learning objectives |
+| GET | `/courses/{courseId}?locale=...` | none | Course modules, lessons, localized content, and quiz IDs |
+| POST | `/courses/{courseId}/enrollments` | session | Enroll the caller in a published course |
+| GET | `/courses/{courseId}/quizzes/{quizId}?locale=...` | session | Quiz questions and choices; answer keys are never returned |
+| POST | `/courses/{courseId}/quizzes/{quizId}/submit` | session | Submit choices for server-side scoring and progress updates |
+| GET | `/courses/{courseId}/results?locale=...` | session | Caller's quiz-attempt and score history |
+| GET | `/progress?locale=...` | session | Caller's enrollment, lesson progress, and course completion history |
+| POST | `/progress` | session | Record lesson start; completion is granted only by a passing quiz |
+| GET | `/certificates` | session | Caller's verified, enrollment-linked certificates |
 
 ## On-chain data (read-only)
 | Method | Path | Auth | Description |
@@ -55,6 +60,8 @@ Errors also return the same `requestId` in the `x-request-id` response header.
 | POST | `/admin/kyc` | reviewer, admin | Approve/reject a KYC submission |
 | POST | `/admin/agents` | admin | Approve/suspend/reject an agent |
 | POST | `/admin/evidence` | reviewer, admin | Verify/reject reforestation evidence |
+| GET | `/admin/courses?locale=...` | admin | List draft, published, and archived courses |
+| POST | `/admin/courses` | admin | Create or replace a draft course and publish after validation |
 | GET | `/admin/audit-logs` | admin | Read audit trail (no write endpoint exists) |
 
 ## Health

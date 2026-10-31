@@ -3,18 +3,10 @@ import { apiOk, withApiErrorHandling } from "@/lib/errors";
 import { requireActor } from "@/lib/auth/authorization";
 import { getServiceRoleClient } from "@/lib/supabase/server";
 import { ProgressUpdateSchema } from "@/schemas/progress";
+import { GETLearningProgress } from "./educationRoutes";
 
 export async function GET(req: NextRequest) {
-  return withApiErrorHandling(async () => {
-    const actor = await requireActor(req);
-    const supabase = getServiceRoleClient();
-    const { data, error } = await supabase
-      .from("course_progress")
-      .select("lesson_id, completed, completed_at")
-      .eq("profile_id", actor.profileId);
-    if (error) throw error;
-    return apiOk(data);
-  });
+  return GETLearningProgress(req);
 }
 
 export async function POST(req: NextRequest) {
@@ -23,19 +15,11 @@ export async function POST(req: NextRequest) {
     const body = ProgressUpdateSchema.parse(await req.json());
     const supabase = getServiceRoleClient();
 
-    const { data, error } = await supabase
-      .from("course_progress")
-      .upsert(
-        {
-          profile_id: actor.profileId,
-          lesson_id: body.lessonId,
-          completed: body.completed,
-          completed_at: body.completed ? new Date().toISOString() : null,
-        },
-        { onConflict: "profile_id,lesson_id" }
-      )
-      .select("lesson_id, completed, completed_at")
-      .single();
+    const { data, error } = await supabase.rpc("record_education_lesson_start", {
+      p_profile_id: actor.profileId,
+      p_enrollment_id: body.enrollmentId,
+      p_lesson_id: body.lessonId,
+    });
     if (error) throw error;
 
     return apiOk(data);
