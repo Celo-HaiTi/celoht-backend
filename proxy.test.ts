@@ -22,7 +22,7 @@ describe("API CORS", () => {
     expect(response.status).toBe(204);
     expect(response.headers.get("access-control-allow-origin")).toBe("https://app.celoht.com");
     expect(response.headers.get("access-control-allow-credentials")).toBe("true");
-    expect(response.headers.get("access-control-allow-methods")).toContain("POST");
+    expect(response.headers.get("access-control-allow-methods")).toBe("GET,POST,PATCH,OPTIONS");
   });
 
   it("does not grant CORS access to other origins", () => {

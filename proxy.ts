@@ -9,7 +9,7 @@ export function proxy(request: NextRequest) {
   if (allowedOrigin && origin === allowedOrigin) {
     corsHeaders["access-control-allow-origin"] = allowedOrigin;
     corsHeaders["access-control-allow-credentials"] = "true";
-    corsHeaders["access-control-allow-methods"] = "GET,POST,PUT,PATCH,DELETE,OPTIONS";
+    corsHeaders["access-control-allow-methods"] = "GET,POST,PATCH,OPTIONS";
     corsHeaders["access-control-allow-headers"] = "content-type,x-request-id";
     corsHeaders.vary = "Origin";
   }
