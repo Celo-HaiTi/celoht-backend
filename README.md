@@ -33,6 +33,7 @@ npm run build
 - `AUTHENTICATION.md` — wallet nonce/signature sign-in flow
 - `AUTHORIZATION.md` — server-side role enforcement
 - `ADMIN.md` — admin/reviewer capabilities and audit trail
+- `USER_EXPERIENCE.md` — profile, notifications, administration, and data provenance
 - `KYC.md` — KYC submission and review flow
 - `INDEXER_INTEGRATION.md` — the read-only boundary with `celoht-indexer`
 - `GOVERNANCE.md` — the verified Sepolia governance contract, voting UX, roles, and advisory-only result boundary

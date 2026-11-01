@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { apiOk, withApiErrorHandling } from "@/lib/errors";
+import { apiError, apiOk, withApiErrorHandling } from "@/lib/errors";
 import { requireActor, requireRole } from "@/lib/auth/authorization";
 import { getServiceRoleClient } from "@/lib/supabase/server";
 import { KycDecisionSchema } from "@/schemas/agents";
@@ -14,11 +14,29 @@ export async function GET(req: NextRequest) {
     const supabase = getServiceRoleClient();
     const { data, error } = await supabase
       .from("agent_kyc")
-      .select("id, agent_id, document_type, status, submitted_at")
+      .select("id, agent_id, document_type, status, submitted_at, storage_path")
       .in("status", ["submitted", "under_review"])
       .order("submitted_at", { ascending: true });
     if (error) throw error;
-    return apiOk(data);
+
+    const queue = await Promise.all((data ?? []).map(async (item) => {
+      if (!item.storage_path.startsWith(`${item.agent_id}/`) || item.storage_path.split("/").some((part: string) => part === "..") || item.storage_path.includes("\\")) {
+        throw new Error("KYC document path violates its agent ownership prefix.");
+      }
+      const { data: file, error: signingError } = await supabase.storage
+        .from("agent-kyc")
+        .createSignedUrl(item.storage_path, 300);
+      if (signingError) throw signingError;
+      return {
+        id: item.id,
+        agent_id: item.agent_id,
+        document_type: item.document_type,
+        status: item.status,
+        submitted_at: item.submitted_at,
+        signedUrl: file.signedUrl,
+      };
+    }));
+    return apiOk(queue);
   });
 }
 
@@ -41,9 +59,11 @@ export async function POST(req: NextRequest) {
         reviewed_at: new Date().toISOString(),
       })
       .eq("id", body.kycId)
+      .in("status", ["submitted", "under_review"])
       .select("id, agent_id, status")
-      .single();
+      .maybeSingle();
     if (error) throw error;
+    if (!data) return apiError("conflict", "KYC submission has already been reviewed or does not exist.");
 
     await writeAuditLog({
       actorId: actor.profileId,

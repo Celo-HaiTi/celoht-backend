@@ -12,7 +12,19 @@ const UpdateProfileSchema = z.object({
 export async function GET(req: NextRequest) {
   return withApiErrorHandling(async () => {
     const actor = await requireActor(req);
-    return apiOk({ profileId: actor.profileId, walletAddress: actor.walletAddress, role: actor.role });
+    const { data, error } = await getServiceRoleClient()
+      .from("profiles")
+      .select("display_name, avatar_url")
+      .eq("id", actor.profileId)
+      .single();
+    if (error) throw error;
+    return apiOk({
+      profileId: actor.profileId,
+      walletAddress: actor.walletAddress,
+      role: actor.role,
+      displayName: data.display_name,
+      avatarUrl: data.avatar_url,
+    });
   });
 }
 

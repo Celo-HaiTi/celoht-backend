@@ -21,7 +21,7 @@ Errors also return the same `requestId` in the `x-request-id` response header.
 ## Profile
 | Method | Path | Auth | Description |
 |---|---|---|---|
-| GET | `/profile` | session | Caller's own profile |
+| GET | `/profile` | session | Caller's verified wallet, current role, display name, and avatar URL |
 | PATCH | `/profile` | session | Update display name / avatar (never role) |
 
 ## Agents
@@ -60,12 +60,29 @@ The browser interface is served at `/governance`.
 ## Admin (reviewer/admin only, server-side enforced)
 | Method | Path | Role | Description |
 |---|---|---|---|
-| GET | `/admin/kyc` | reviewer, admin | Pending KYC queue |
+| GET | `/admin/users` | admin | Paginated wallet profiles and application roles |
+| PATCH | `/admin/users` | admin | Change another profile's application role; audited; self-role changes are denied |
+| GET | `/admin/agents` | admin | Paginated agent application review queue |
+| GET | `/admin/kyc` | reviewer, admin | Pending KYC queue with five-minute signed private document links |
 | POST | `/admin/kyc` | reviewer, admin | Approve/reject a KYC submission |
 | POST | `/admin/agents` | admin | Approve/suspend/reject an agent |
 | GET | `/admin/evidence` | reviewer, admin | Pending planting reports with short-lived private file links |
 | POST | `/admin/evidence` | reviewer, admin | Verify/reject a pending planting report |
+| GET | `/admin/courses` | admin | Paginated course management records |
+| POST | `/admin/courses` | admin | Create a course as draft by default |
+| PATCH | `/admin/courses` | admin | Edit course content or publication status |
+| GET | `/admin/projects` | admin | Paginated reforestation project management records |
+| POST | `/admin/projects` | admin | Create a project as draft by default |
+| PATCH | `/admin/projects` | admin | Edit project content or publication status |
 | GET | `/admin/audit-logs` | admin | Read audit trail (no write endpoint exists) |
+
+The `/profile` interface composes authenticated profile, learning progress,
+agent status, confirmed contributions, wallet activity, and governance data.
+Its notification feed is derived from these real records; category preferences
+and the selected language are stored per wallet in that browser. It does not
+claim push delivery or cross-device preference synchronization.
+`/admin` provides the protected administrative console. Governance and
+operational status are read-only views there.
 
 ## Health
 | Method | Path | Auth | Description |

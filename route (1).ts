@@ -3,6 +3,7 @@ import { apiOk, withApiErrorHandling } from "@/lib/errors";
 import { requireActor, requireRole } from "@/lib/auth/authorization";
 import { getServiceRoleClient } from "@/lib/supabase/server";
 import { AgentStatusDecisionSchema } from "@/schemas/agents";
+import { PaginationSchema } from "@/schemas/pagination";
 import { writeAuditLog, type AuditAction } from "@/lib/audit";
 
 const ACTION_BY_DECISION: Record<"approved" | "suspended" | "rejected", AuditAction> = {
@@ -10,6 +11,22 @@ const ACTION_BY_DECISION: Record<"approved" | "suspended" | "rejected", AuditAct
   suspended: "agent_suspension",
   rejected: "agent_rejection",
 };
+
+/** Admin-only: list real agent applications for review. */
+export async function GET(req: NextRequest) {
+  return withApiErrorHandling(async () => {
+    const actor = await requireActor(req);
+    requireRole(actor, ["admin"]);
+    const { limit, offset } = PaginationSchema.parse(Object.fromEntries(new URL(req.url).searchParams));
+    const { data, error } = await getServiceRoleClient()
+      .from("agents")
+      .select("id, profile_id, wallet_address, application_data, off_chain_kyc_status, on_chain_registry_status, created_at, updated_at")
+      .order("created_at", { ascending: false })
+      .range(offset, offset + limit - 1);
+    if (error) throw error;
+    return apiOk(data ?? []);
+  });
+}
 
 /** Admin-only: suspend, approve, or reject an agent's off-chain status. */
 export async function POST(req: NextRequest) {

@@ -125,7 +125,19 @@ paths:
     get: { tags: [Admin], security: [{ session: [] }], responses: { '200': { $ref: '#/components/responses/Success' }, '403': { $ref: '#/components/responses/Forbidden' } } }
     post: { tags: [Admin], security: [{ session: [] }], responses: { '200': { $ref: '#/components/responses/Success' }, '403': { $ref: '#/components/responses/Forbidden' } } }
   /admin/agents:
+    get: { tags: [Admin], security: [{ session: [] }], parameters: [{ $ref: '#/components/parameters/Limit' }, { $ref: '#/components/parameters/Offset' }], responses: { '200': { $ref: '#/components/responses/Success' }, '403': { $ref: '#/components/responses/Forbidden' } } }
     post: { tags: [Admin], security: [{ session: [] }], responses: { '200': { $ref: '#/components/responses/Success' }, '403': { $ref: '#/components/responses/Forbidden' } } }
+  /admin/users:
+    get: { tags: [Admin], security: [{ session: [] }], parameters: [{ $ref: '#/components/parameters/Limit' }, { $ref: '#/components/parameters/Offset' }], responses: { '200': { $ref: '#/components/responses/Success' }, '403': { $ref: '#/components/responses/Forbidden' } } }
+    patch: { tags: [Admin], security: [{ session: [] }], responses: { '200': { $ref: '#/components/responses/Success' }, '403': { $ref: '#/components/responses/Forbidden' }, '409': { $ref: '#/components/responses/Conflict' } } }
+  /admin/courses:
+    get: { tags: [Admin], security: [{ session: [] }], parameters: [{ $ref: '#/components/parameters/Limit' }, { $ref: '#/components/parameters/Offset' }], responses: { '200': { $ref: '#/components/responses/Success' }, '403': { $ref: '#/components/responses/Forbidden' } } }
+    post: { tags: [Admin], security: [{ session: [] }], responses: { '201': { $ref: '#/components/responses/Success' }, '403': { $ref: '#/components/responses/Forbidden' } } }
+    patch: { tags: [Admin], security: [{ session: [] }], responses: { '200': { $ref: '#/components/responses/Success' }, '403': { $ref: '#/components/responses/Forbidden' } } }
+  /admin/projects:
+    get: { tags: [Admin], security: [{ session: [] }], parameters: [{ $ref: '#/components/parameters/Limit' }, { $ref: '#/components/parameters/Offset' }], responses: { '200': { $ref: '#/components/responses/Success' }, '403': { $ref: '#/components/responses/Forbidden' } } }
+    post: { tags: [Admin], security: [{ session: [] }], responses: { '201': { $ref: '#/components/responses/Success' }, '403': { $ref: '#/components/responses/Forbidden' } } }
+    patch: { tags: [Admin], security: [{ session: [] }], responses: { '200': { $ref: '#/components/responses/Success' }, '403': { $ref: '#/components/responses/Forbidden' } } }
   /admin/evidence:
     get: { tags: [Admin], security: [{ session: [] }], responses: { '200': { $ref: '#/components/responses/Success' }, '403': { $ref: '#/components/responses/Forbidden' } } }
     post: { tags: [Admin], security: [{ session: [] }], responses: { '200': { $ref: '#/components/responses/Success' }, '403': { $ref: '#/components/responses/Forbidden' } } }
