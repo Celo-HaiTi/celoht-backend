@@ -34,6 +34,13 @@ export const CeloHTGovernanceAbi = [
   },
   {
     type: "function",
+    name: "vote",
+    stateMutability: "nonpayable",
+    inputs: [{ name: "proposalId", type: "uint256" }, { name: "option", type: "uint8" }],
+    outputs: [],
+  },
+  {
+    type: "function",
     name: "participationFee",
     stateMutability: "view",
     inputs: [],

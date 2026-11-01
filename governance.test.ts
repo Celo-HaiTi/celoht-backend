@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { encodeFunctionData, toFunctionSelector } from "viem";
 import { GET as getGovernance } from "./route (11)";
+import { CeloHTGovernanceAbi } from "@/lib/governance/contract";
 
 const configMocks = vi.hoisted(() => {
   class ConfigurationError extends Error {}
@@ -139,5 +141,17 @@ describe("GET /governance", () => {
     expect(body.error.code).toBe("validation_error");
     expect(mocks.assertOfficialGovernanceDeployment).not.toHaveBeenCalled();
     expect(mocks.from).not.toHaveBeenCalled();
+  });
+});
+describe("CeloHT Governance vote ABI", () => {
+  it("encodes the proposal ID and contract vote option", () => {
+    const data = encodeFunctionData({
+      abi: CeloHTGovernanceAbi,
+      functionName: "vote",
+      args: [42n, 1],
+    });
+
+    expect(data.slice(0, 10)).toBe(toFunctionSelector("vote(uint256,uint8)"));
+    expect(data.slice(10)).toBe(`${42n.toString(16).padStart(64, "0")}${"1".padStart(64, "0")}`);
   });
 });
