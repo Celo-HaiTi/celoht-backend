@@ -1,7 +1,5 @@
 const required = [
   "SUPABASE_URL",
-  "SUPABASE_ANON_KEY",
-  "SUPABASE_SERVICE_ROLE_KEY",
   "AUTH_SESSION_SECRET",
   "CELO_NETWORK",
   "CELO_CHAIN_ID",
@@ -11,7 +9,13 @@ const required = [
   "CELOHT_ALLOWED_ORIGIN",
 ];
 
-const missing = required.filter((name) => !process.env[name]);
+const publishableKey = process.env.SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_ANON_KEY;
+const secretKey = process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
+const missing = [
+  ...required.filter((name) => !process.env[name]),
+  ...(!publishableKey ? ["SUPABASE_PUBLISHABLE_KEY"] : []),
+  ...(!secretKey ? ["SUPABASE_SECRET_KEY"] : []),
+];
 if (missing.length > 0) {
   console.error(`BLOCKED: missing required smoke configuration: ${missing.join(", ")}`);
   process.exit(2);
@@ -67,8 +71,8 @@ async function run() {
   }
 
   const serviceHeaders = {
-    apikey: process.env.SUPABASE_SERVICE_ROLE_KEY,
-    Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
+    apikey: secretKey,
+    Authorization: `Bearer ${secretKey}`,
   };
   try {
     const response = await request(`${process.env.SUPABASE_URL}/rest/v1/profiles?select=id&limit=1`, {
@@ -82,8 +86,8 @@ async function run() {
   try {
     const response = await request(`${process.env.SUPABASE_URL}/rest/v1/profiles?select=id&limit=1`, {
       headers: {
-        apikey: process.env.SUPABASE_ANON_KEY,
-        Authorization: `Bearer ${process.env.SUPABASE_ANON_KEY}`,
+        apikey: publishableKey,
+        Authorization: `Bearer ${publishableKey}`,
       },
     });
     const body = await response.json().catch(() => null);

@@ -57,11 +57,12 @@ disabled until its private storage contract is fixed.
 
 ### Required Render environment variable names
 
-`SUPABASE_ANON_KEY` or `SUPABASE_PUBLISHABLE_KEY`,
-`SUPABASE_SERVICE_ROLE_KEY` or `SUPABASE_SECRET_KEY`, `AUTH_SESSION_SECRET`,
+`SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SECRET_KEY`, `AUTH_SESSION_SECRET`,
 `UPSTASH_REDIS_REST_URL`, and `UPSTASH_REDIS_REST_TOKEN`. Render Blueprint
 pins `SUPABASE_URL`, `CELO_NETWORK`, `CELO_CHAIN_ID`, `CELO_RPC_URL`,
 `CELOHT_ALLOWED_ORIGIN`, and `NODE_VERSION`.
+The legacy `SUPABASE_ANON_KEY` and `SUPABASE_SERVICE_ROLE_KEY` remain fallback
+aliases; modern keys take precedence when both forms are configured.
 
 The assessment below is retained as historical context from 2026-09-15.
 

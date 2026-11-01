@@ -28,7 +28,8 @@ describe("getConfig (fail closed)", () => {
 
   it("parses successfully with a complete, valid environment", () => {
     Object.assign(process.env, VALID_ENV);
-    expect(() => getConfig()).not.toThrow();
+    expect(getConfig().SUPABASE_PUBLISHABLE_KEY).toBe(VALID_ENV.SUPABASE_ANON_KEY);
+    expect(getConfig().SUPABASE_SECRET_KEY).toBe(VALID_ENV.SUPABASE_SERVICE_ROLE_KEY);
   });
 
   for (const key of ["SUPABASE_URL", "CELO_NETWORK", "CELO_CHAIN_ID", "CELO_RPC_URL", "AUTH_SESSION_SECRET"]) {
@@ -49,8 +50,40 @@ describe("getConfig (fail closed)", () => {
 
     const config = getConfig();
 
-    expect(config.SUPABASE_ANON_KEY).toBe("sb_publishable_test_key");
-    expect(config.SUPABASE_SERVICE_ROLE_KEY).toBe("sb_secret_test_key");
+    expect(config.SUPABASE_PUBLISHABLE_KEY).toBe("sb_publishable_test_key");
+    expect(config.SUPABASE_SECRET_KEY).toBe("sb_secret_test_key");
+  });
+
+  it("prefers modern keys when differing legacy aliases are also configured", () => {
+    Object.assign(process.env, VALID_ENV, {
+      SUPABASE_PUBLISHABLE_KEY: "sb_publishable_modern",
+      SUPABASE_SECRET_KEY: "sb_secret_modern",
+    });
+
+    const config = getConfig();
+
+    expect(config.SUPABASE_PUBLISHABLE_KEY).toBe("sb_publishable_modern");
+    expect(config.SUPABASE_SECRET_KEY).toBe("sb_secret_modern");
+    expect(config.SUPABASE_ANON_KEY).toBe("sb_publishable_modern");
+    expect(config.SUPABASE_SERVICE_ROLE_KEY).toBe("sb_secret_modern");
+  });
+
+  it.each([
+    ["SUPABASE_ANON_KEY", "SUPABASE_PUBLISHABLE_KEY"],
+    ["SUPABASE_SERVICE_ROLE_KEY", "SUPABASE_SECRET_KEY"],
+  ])("fails with the modern variable name when both %s and %s are missing", (legacyKey, modernKey) => {
+    Object.assign(process.env, VALID_ENV);
+    delete process.env[legacyKey];
+    delete process.env[modernKey];
+
+    try {
+      getConfig();
+      throw new Error("Expected configuration to fail");
+    } catch (error) {
+      expect(error).toBeInstanceOf(ConfigurationError);
+      expect((error as ConfigurationError).variables).toContain(modernKey);
+      expect((error as Error).message).not.toContain(VALID_ENV.SUPABASE_SERVICE_ROLE_KEY);
+    }
   });
 
   it("rejects aliases that do not match Supabase's modern key prefixes", () => {
@@ -86,6 +119,31 @@ describe("getConfig (fail closed)", () => {
     expect(() => getConfig()).toThrow(ConfigurationError);
   });
 
+  it.each(["UPSTASH_REDIS_REST_URL", "UPSTASH_REDIS_REST_TOKEN"])(
+    "requires %s in production",
+    (variable) => {
+      Object.assign(process.env, VALID_ENV, {
+        SUPABASE_PUBLISHABLE_KEY: "sb_publishable_test_key",
+        SUPABASE_SECRET_KEY: "sb_secret_test_key",
+        SUPABASE_URL: "https://cncplsjsqsxuespnacoa.supabase.co",
+        NODE_ENV: "production",
+        CELO_RPC_URL: "https://forno.celo-sepolia.celo-testnet.org",
+        CELOHT_ALLOWED_ORIGIN: "https://app.celoht.com",
+        UPSTASH_REDIS_REST_URL: "https://redis.example.com",
+        UPSTASH_REDIS_REST_TOKEN: "unit-test-token",
+      });
+      delete process.env[variable];
+
+      try {
+        getConfig();
+        throw new Error("Expected production configuration to fail");
+      } catch (error) {
+        expect(error).toBeInstanceOf(ConfigurationError);
+        expect((error as ConfigurationError).variables).toContain(variable);
+      }
+    }
+  );
+
   it("rejects a session secret shorter than 32 characters", () => {
     Object.assign(process.env, VALID_ENV, { AUTH_SESSION_SECRET: "short" });
     expect(() => getConfig()).toThrow();
@@ -99,5 +157,19 @@ describe("getConfig (fail closed)", () => {
   it("rejects using the service-role key as the anon key", () => {
     Object.assign(process.env, VALID_ENV, { SUPABASE_ANON_KEY: VALID_ENV.SUPABASE_SERVICE_ROLE_KEY });
     expect(() => getConfig()).toThrow(ConfigurationError);
+  });
+
+  it("does not reveal key values in key-role validation errors", () => {
+    Object.assign(process.env, VALID_ENV, {
+      SUPABASE_PUBLISHABLE_KEY: "sb_secret_do_not_disclose",
+    });
+
+    try {
+      getConfig();
+      throw new Error("Expected configuration to fail");
+    } catch (error) {
+      expect(error).toBeInstanceOf(ConfigurationError);
+      expect((error as Error).message).not.toContain("sb_secret_do_not_disclose");
+    }
   });
 });

@@ -8,8 +8,8 @@ import { getConfig } from "@/lib/config";
  * SECURITY: This file must only ever be imported from server-side code
  * (API route handlers, server actions). The `server-only` import above
  * causes a build-time error if it is ever pulled into a client bundle.
- * SUPABASE_SERVICE_ROLE_KEY must never be exposed via NEXT_PUBLIC_* or
- * shipped to the browser.
+ * SUPABASE_SECRET_KEY must never be exposed via NEXT_PUBLIC_* or shipped to
+ * the browser. The legacy service-role alias is normalized in config.ts.
  */
 
 let client: SupabaseClient | null = null;
@@ -19,7 +19,7 @@ export function getServiceRoleClient(): SupabaseClient {
 
   const config = getConfig(); // throws (fail closed) if misconfigured
 
-  client = createClient(config.SUPABASE_URL, config.SUPABASE_SERVICE_ROLE_KEY, {
+  client = createClient(config.SUPABASE_URL, config.SUPABASE_SECRET_KEY, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
 

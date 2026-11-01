@@ -3,8 +3,10 @@
 | Variable | Required | Notes |
 |---|---|---|
 | `SUPABASE_URL` | yes | Canonical project `cncplsjsqsxuespnacoa`; Render Blueprint pins the project URL |
-| `SUPABASE_ANON_KEY` or `SUPABASE_PUBLISHABLE_KEY` | yes | Use one publishable/anon key; never substitute a server secret |
-| `SUPABASE_SERVICE_ROLE_KEY` or `SUPABASE_SECRET_KEY` | yes | **Secret.** Server-only, never `NEXT_PUBLIC_*`; the modern alias must use `sb_secret_` |
+| `SUPABASE_PUBLISHABLE_KEY` | yes | Modern public key for public/client operations; must use `sb_publishable_` |
+| `SUPABASE_SECRET_KEY` | yes | **Secret.** Server-only, never `NEXT_PUBLIC_*`; must use `sb_secret_` |
+| `SUPABASE_ANON_KEY` | no | Legacy publishable-key fallback; ignored when `SUPABASE_PUBLISHABLE_KEY` is set |
+| `SUPABASE_SERVICE_ROLE_KEY` | no | Legacy server-key fallback; ignored when `SUPABASE_SECRET_KEY` is set |
 | `CELO_NETWORK` | yes | Must be `celoSepolia` |
 | `CELO_CHAIN_ID` | yes | Must be an officially supported CeloHT chain (currently `11142220`) |
 | `CELO_RPC_URL` | yes | `https://forno.celo-sepolia.celo-testnet.org` (Celo Sepolia only) |

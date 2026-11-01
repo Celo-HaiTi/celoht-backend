@@ -14,11 +14,7 @@ services:
         value: production
       - key: SUPABASE_URL
         value: https://cncplsjsqsxuespnacoa.supabase.co
-      - key: SUPABASE_ANON_KEY
-        sync: false
       - key: SUPABASE_PUBLISHABLE_KEY
-        sync: false
-      - key: SUPABASE_SERVICE_ROLE_KEY
         sync: false
       - key: SUPABASE_SECRET_KEY
         sync: false

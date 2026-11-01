@@ -1,9 +1,12 @@
 # SECURITY.md
 
 ## Non-negotiables
-- `SUPABASE_SERVICE_ROLE_KEY` or `SUPABASE_SECRET_KEY` lives only in server environment variables,
+- `SUPABASE_SECRET_KEY` lives only in server environment variables,
   read only from `src/lib/supabase/server.ts`, which is `import "server-only"`
   guarded. It is never referenced in any `NEXT_PUBLIC_*` variable.
+- `SUPABASE_PUBLISHABLE_KEY` is used only for public/client operations. The
+  legacy `SUPABASE_ANON_KEY` and `SUPABASE_SERVICE_ROLE_KEY` are fallbacks and
+  are overridden by their modern counterparts when both are present.
 - No private key or seed phrase is ever requested, accepted, or stored.
 - No endpoint trusts a client-declared role, admin flag, or wallet address
   without independent verification (signature check for wallet identity;

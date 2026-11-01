@@ -57,9 +57,9 @@ The checked-in code does not appear to include fake production data paths. The f
 
 Required external dependencies for a real deployment include:
 
-- Supabase project `cncplsjsqsxuespnacoa` (`SUPABASE_URL`, either
-  `SUPABASE_ANON_KEY` or `SUPABASE_PUBLISHABLE_KEY`, and either
-  `SUPABASE_SERVICE_ROLE_KEY` or `SUPABASE_SECRET_KEY`)
+- Supabase project `cncplsjsqsxuespnacoa` (`SUPABASE_URL`,
+  `SUPABASE_PUBLISHABLE_KEY`, and server-only `SUPABASE_SECRET_KEY`; legacy
+  aliases remain supported with modern-key precedence)
 - Celo Sepolia RPC endpoint (`CELO_RPC_URL`)
 - Session secret (`AUTH_SESSION_SECRET`)
 - Canonical CeloHT sibling repositories, especially:

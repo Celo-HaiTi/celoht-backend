@@ -11,9 +11,10 @@
 
 ## Required production controls
 
-- Set `SUPABASE_SERVICE_ROLE_KEY` or `SUPABASE_SECRET_KEY` only in the server
-  environment. Configure one of `SUPABASE_ANON_KEY` or
-  `SUPABASE_PUBLISHABLE_KEY` for the publishable key.
+- Set `SUPABASE_SECRET_KEY` only in the server environment. Use
+  `SUPABASE_PUBLISHABLE_KEY` only for public/client operations. The legacy
+  `SUPABASE_SERVICE_ROLE_KEY` and `SUPABASE_ANON_KEY` are fallbacks; modern
+  values take precedence if both forms are configured.
 - Set `CELOHT_ALLOWED_ORIGIN` to the exact dApp/admin origin. Do not use `*`
   with credentialed cookies.
 - Configure `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN`; production

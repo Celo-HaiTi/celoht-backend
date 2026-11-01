@@ -1,3 +1,4 @@
+import "server-only";
 import { z } from "zod";
 
 /**
@@ -39,23 +40,14 @@ const ConfigSchema = z.object({
   UPSTASH_REDIS_REST_TOKEN: z.string().min(1).optional(),
   CELOHT_ALLOWED_ORIGIN: z.string().url().optional(),
 }).superRefine((values, context) => {
-  if (!values.SUPABASE_ANON_KEY && !values.SUPABASE_PUBLISHABLE_KEY) {
-    context.addIssue({ code: "custom", path: ["SUPABASE_ANON_KEY"], message: "Set SUPABASE_ANON_KEY or SUPABASE_PUBLISHABLE_KEY." });
+  const publishableKey = values.SUPABASE_PUBLISHABLE_KEY ?? values.SUPABASE_ANON_KEY;
+  const secretKey = values.SUPABASE_SECRET_KEY ?? values.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!publishableKey) {
+    context.addIssue({ code: "custom", path: ["SUPABASE_PUBLISHABLE_KEY"], message: "Set SUPABASE_PUBLISHABLE_KEY or the legacy SUPABASE_ANON_KEY." });
   }
-  if (!values.SUPABASE_SERVICE_ROLE_KEY && !values.SUPABASE_SECRET_KEY) {
-    context.addIssue({ code: "custom", path: ["SUPABASE_SERVICE_ROLE_KEY"], message: "Set SUPABASE_SERVICE_ROLE_KEY or SUPABASE_SECRET_KEY." });
-  }
-  if (
-    values.SUPABASE_ANON_KEY && values.SUPABASE_PUBLISHABLE_KEY &&
-    values.SUPABASE_ANON_KEY !== values.SUPABASE_PUBLISHABLE_KEY
-  ) {
-    context.addIssue({ code: "custom", path: ["SUPABASE_PUBLISHABLE_KEY"], message: "Set only one publishable/anon key." });
-  }
-  if (
-    values.SUPABASE_SERVICE_ROLE_KEY && values.SUPABASE_SECRET_KEY &&
-    values.SUPABASE_SERVICE_ROLE_KEY !== values.SUPABASE_SECRET_KEY
-  ) {
-    context.addIssue({ code: "custom", path: ["SUPABASE_SECRET_KEY"], message: "Set only one server key." });
+  if (!secretKey) {
+    context.addIssue({ code: "custom", path: ["SUPABASE_SECRET_KEY"], message: "Set SUPABASE_SECRET_KEY or the legacy SUPABASE_SERVICE_ROLE_KEY." });
   }
   if (values.SUPABASE_PUBLISHABLE_KEY && !values.SUPABASE_PUBLISHABLE_KEY.startsWith("sb_publishable_")) {
     context.addIssue({ code: "custom", path: ["SUPABASE_PUBLISHABLE_KEY"], message: "SUPABASE_PUBLISHABLE_KEY must use the sb_publishable_ format." });
@@ -63,16 +55,21 @@ const ConfigSchema = z.object({
   if (values.SUPABASE_SECRET_KEY && !values.SUPABASE_SECRET_KEY.startsWith("sb_secret_")) {
     context.addIssue({ code: "custom", path: ["SUPABASE_SECRET_KEY"], message: "SUPABASE_SECRET_KEY must use the sb_secret_ format." });
   }
-  if (values.SUPABASE_ANON_KEY?.startsWith("sb_secret_")) {
-    context.addIssue({ code: "custom", path: ["SUPABASE_ANON_KEY"], message: "A secret key cannot be used as a publishable key." });
+  if (publishableKey?.startsWith("sb_secret_")) {
+    context.addIssue({ code: "custom", path: ["SUPABASE_PUBLISHABLE_KEY"], message: "A secret key cannot be used as a publishable key." });
   }
-  if (values.SUPABASE_SERVICE_ROLE_KEY?.startsWith("sb_publishable_")) {
-    context.addIssue({ code: "custom", path: ["SUPABASE_SERVICE_ROLE_KEY"], message: "A publishable key cannot be used as a server key." });
+  if (secretKey?.startsWith("sb_publishable_")) {
+    context.addIssue({ code: "custom", path: ["SUPABASE_SECRET_KEY"], message: "A publishable key cannot be used as a server key." });
+  }
+  if (publishableKey && secretKey && publishableKey === secretKey) {
+    context.addIssue({ code: "custom", path: ["SUPABASE_PUBLISHABLE_KEY"], message: "Publishable and server keys must be different." });
   }
 }).transform((values) => ({
   ...values,
-  SUPABASE_ANON_KEY: values.SUPABASE_ANON_KEY ?? values.SUPABASE_PUBLISHABLE_KEY!,
-  SUPABASE_SERVICE_ROLE_KEY: values.SUPABASE_SERVICE_ROLE_KEY ?? values.SUPABASE_SECRET_KEY!,
+  SUPABASE_PUBLISHABLE_KEY: values.SUPABASE_PUBLISHABLE_KEY ?? values.SUPABASE_ANON_KEY!,
+  SUPABASE_SECRET_KEY: values.SUPABASE_SECRET_KEY ?? values.SUPABASE_SERVICE_ROLE_KEY!,
+  SUPABASE_ANON_KEY: values.SUPABASE_PUBLISHABLE_KEY ?? values.SUPABASE_ANON_KEY!,
+  SUPABASE_SERVICE_ROLE_KEY: values.SUPABASE_SECRET_KEY ?? values.SUPABASE_SERVICE_ROLE_KEY!,
 }));
 
 export type Config = z.infer<typeof ConfigSchema>;
@@ -102,13 +99,6 @@ export function getConfig(): Config {
     throw new ConfigurationError(
       `Missing or invalid required configuration: ${variables.join(", ")}`,
       variables
-    );
-  }
-
-  if (parsed.data.SUPABASE_ANON_KEY === parsed.data.SUPABASE_SERVICE_ROLE_KEY) {
-    throw new ConfigurationError(
-      "SUPABASE_ANON_KEY must be the anon/publishable key, not the service-role key.",
-      ["SUPABASE_ANON_KEY"]
     );
   }
 

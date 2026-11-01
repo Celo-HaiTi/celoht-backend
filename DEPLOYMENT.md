@@ -17,11 +17,15 @@ The Blueprint sets `NODE_VERSION=22`, `NODE_ENV=production`,
 not set or hard-code it yourself.
 
 Set these values in the Render service's Environment page; do not commit them:
-- `SUPABASE_ANON_KEY` or `SUPABASE_PUBLISHABLE_KEY` (configure exactly one)
-- `SUPABASE_SERVICE_ROLE_KEY` or `SUPABASE_SECRET_KEY` (configure exactly one; secret and server-side only)
+- `SUPABASE_PUBLISHABLE_KEY` (`sb_publishable_` public key)
+- `SUPABASE_SECRET_KEY` (`sb_secret_` secret; server-side only)
 - `AUTH_SESSION_SECRET` (generate with `openssl rand -base64 32`; store only in Render)
 - `UPSTASH_REDIS_REST_URL`
 - `UPSTASH_REDIS_REST_TOKEN` (secret)
+
+The legacy `SUPABASE_ANON_KEY` and `SUPABASE_SERVICE_ROLE_KEY` remain accepted
+for migration compatibility. When a modern key and its legacy alias are both
+set, the modern key takes precedence; differing legacy values do not block startup.
 
 The remaining `CELO_*` confirmation, polling, timeout, and retry settings have
 non-secret defaults in `render.yaml`. The backend rejects missing required
@@ -45,7 +49,7 @@ npm start
 
 ## Environment
 Set the environment above, apply the Blueprint, and deploy. Keep
-`SUPABASE_SERVICE_ROLE_KEY`, `AUTH_SESSION_SECRET`, and
+`SUPABASE_SECRET_KEY`, `AUTH_SESSION_SECRET`, and
 `UPSTASH_REDIS_REST_TOKEN` secret and server-only. Never prefix them with
 `NEXT_PUBLIC_`.
 

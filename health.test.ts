@@ -21,8 +21,8 @@ describe("GET /api/v1/health", () => {
       ...originalEnv,
       NODE_ENV: "production",
       SUPABASE_URL: "https://cncplsjsqsxuespnacoa.supabase.co",
-      SUPABASE_ANON_KEY: "anon-key",
-      SUPABASE_SERVICE_ROLE_KEY: "service-role-key",
+      SUPABASE_PUBLISHABLE_KEY: "sb_publishable_test_key",
+      SUPABASE_SECRET_KEY: "sb_secret_test_key",
       CELO_NETWORK: "celoSepolia",
       CELO_CHAIN_ID: "11142220",
       CELO_RPC_URL: "https://forno.celo-sepolia.celo-testnet.org",
@@ -49,19 +49,19 @@ describe("GET /api/v1/health", () => {
   });
 
   it("returns a diagnostic 503 when required configuration is missing", async () => {
-    delete process.env.SUPABASE_SERVICE_ROLE_KEY;
+    delete process.env.SUPABASE_SECRET_KEY;
     __resetConfigCacheForTests();
 
     const response = await GET();
     const body = await response.json();
 
     expect(response.status).toBe(503);
-    expect(body.error.details.missingOrInvalidVariables).toContain("SUPABASE_SERVICE_ROLE_KEY");
-    expect(JSON.stringify(body)).not.toContain("service-role-key");
+    expect(body.error.details.missingOrInvalidVariables).toContain("SUPABASE_SECRET_KEY");
+    expect(JSON.stringify(body)).not.toContain("sb_secret_test_key");
   });
 
   it.each([
-    "SUPABASE_ANON_KEY",
+    "SUPABASE_PUBLISHABLE_KEY",
     "CELO_CHAIN_ID",
     "AUTH_SESSION_SECRET",
     "UPSTASH_REDIS_REST_URL",
@@ -77,9 +77,9 @@ describe("GET /api/v1/health", () => {
 
     expect(response.status).toBe(503);
     expect(body.error.details.missingOrInvalidVariables).toContain(variable);
-    expect(serialized).not.toContain("service-role-key");
+    expect(serialized).not.toContain("sb_secret_test_key");
     expect(serialized).not.toContain("redis-token");
-    expect(JSON.stringify(log.mock.calls)).not.toContain("service-role-key");
+    expect(JSON.stringify(log.mock.calls)).not.toContain("sb_secret_test_key");
     expect(JSON.stringify(log.mock.calls)).not.toContain("redis-token");
   });
 

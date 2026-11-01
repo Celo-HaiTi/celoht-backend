@@ -7,7 +7,7 @@ vi.mock("./config", () => ({ getConfig }));
 
 afterEach(() => {
   vi.unstubAllEnvs();
-  vi.clearAllMocks();
+  vi.resetAllMocks();
 });
 
 describe("production configuration startup validation", () => {
@@ -18,6 +18,16 @@ describe("production configuration startup validation", () => {
     await register();
 
     expect(getConfig).toHaveBeenCalledOnce();
+  });
+
+  it("fails server startup when production configuration is invalid", async () => {
+    vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("NEXT_RUNTIME", "nodejs");
+    getConfig.mockImplementation(() => {
+      throw new Error("Missing required production configuration: UPSTASH_REDIS_REST_TOKEN");
+    });
+
+    await expect(register()).rejects.toThrow("UPSTASH_REDIS_REST_TOKEN");
   });
 
   it("skips configuration validation during production builds", async () => {
