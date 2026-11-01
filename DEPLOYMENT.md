@@ -9,8 +9,9 @@
 - The Render Blueprint in `render.yaml` connected to this repository.
 
 ## Render environment
-The Blueprint sets `NODE_VERSION=20`, `NODE_ENV=production`,
-`CELO_CHAIN_ID=11142220`, `CELO_NETWORK=celoSepolia`, and
+The Blueprint sets `NODE_VERSION=22`, `NODE_ENV=production`,
+`CELO_CHAIN_ID=11142220`, `CELO_NETWORK=celoSepolia`,
+`CELO_RPC_URL=https://forno.celo-sepolia.celo-testnet.org`, and
 `CELOHT_ALLOWED_ORIGIN=https://app.celoht.com`. Render supplies `PORT`; do not
 set or hard-code it yourself.
 
@@ -18,7 +19,6 @@ Set these values in the Render service's Environment page; do not commit them:
 - `SUPABASE_URL`
 - `SUPABASE_ANON_KEY` (anon/publishable key; never the service-role key)
 - `SUPABASE_SERVICE_ROLE_KEY` (secret; server-side only)
-- `CELO_RPC_URL` (Celo Sepolia only)
 - `AUTH_SESSION_SECRET` (generate with `openssl rand -base64 32`; store only in Render)
 - `UPSTASH_REDIS_REST_URL`
 - `UPSTASH_REDIS_REST_TOKEN` (secret)

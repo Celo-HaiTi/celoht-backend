@@ -7,7 +7,7 @@
 | `SUPABASE_SERVICE_ROLE_KEY` | yes | **Secret.** Server-only, never `NEXT_PUBLIC_*` |
 | `CELO_NETWORK` | yes | Must be `celoSepolia` |
 | `CELO_CHAIN_ID` | yes | Must be an officially supported CeloHT chain (currently `11142220`) |
-| `CELO_RPC_URL` | yes | Celo Sepolia RPC endpoint |
+| `CELO_RPC_URL` | yes | `https://forno.celo-sepolia.celo-testnet.org` (Celo Sepolia only) |
 | `CELO_CONFIRMATIONS` | no (default 1) | Confirmation depth for indexed state |
 | `CELO_BACKFILL_BLOCKS` | no (default 0) | Initial block backfill range |
 | `CELO_POLL_INTERVAL_MS` | no (default 10000) | Indexer polling interval |
