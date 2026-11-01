@@ -3,7 +3,7 @@ services:
     name: celoht-backend
     runtime: node
     plan: free
-    buildCommand: npm ci && npm run build
+    buildCommand: npm ci --include=dev && npm run build
     startCommand: npm run start
     healthCheckPath: /api/v1/health
     autoDeploy: true
