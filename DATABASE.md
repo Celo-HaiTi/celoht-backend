@@ -29,3 +29,13 @@ the server-side service-role client. No `system_health` table is required, and
 this repository contains no migration for one. The canonical Supabase schema
 must still be applied so the core `profiles` table exists and is readable by
 the service role.
+
+## Canonical reforestation contract
+The canonical `reforestation_contributions` rows reference
+`blockchain_transactions` through `blockchain_transaction_id` and identify the
+wallet with `contributor_wallet_address`; the transaction hash and confirmation
+state come from the indexer-owned transaction row. The canonical
+`reforestation_evidence` row stores one `storage_path`, `project_id`, and
+`submitted_by`, plus verification state. It has no `agent_id`, `storage_paths`,
+planting-date, coordinate, or notes columns. Do not reintroduce those fields
+without an approved external migration.

@@ -9,7 +9,7 @@ tables (see `docs/INDEXER_INTEGRATION.md`) and never fabricates on-chain
 data — see `docs/ARCHITECTURE.md`.
 
 ## Stack
-Next.js 14 (App Router) · TypeScript strict · Zod · Supabase · viem
+Next.js 16 (App Router) · TypeScript strict · Zod · Supabase · viem
 
 ## Getting started
 ```bash

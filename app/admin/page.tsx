@@ -7,7 +7,7 @@ import { translateStatus, type MessageKey } from "../portal/messages";
 type UserRecord = { id: string; wallet_address: string; role: "user" | "agent" | "reviewer" | "admin"; display_name: string | null };
 type AgentRecord = { id: string; profile_id: string; wallet_address: string; application_data: Record<string, unknown>; off_chain_kyc_status: string; on_chain_registry_status: string | null; created_at: string };
 type KycRecord = { id: string; agent_id: string; document_type: string; status: string; submitted_at: string; signedUrl: string };
-type EvidenceRecord = { id: string; project_id: string; agent_id: string; planting_date: string; latitude: number; longitude: number; notes: string | null; status: string; files: { path: string; signedUrl: string }[] };
+type EvidenceRecord = { id: string; project_id: string; submitted_by: string | null; trees_verified: number | null; status: string; created_at: string; signedUrl: string };
 type CourseRecord = { id: string; title: string; description: string | null; status: "draft" | "published"; created_at: string };
 type ProjectRecord = { id: string; title: string; description: string | null; location: string | null; status: "draft" | "published"; created_at: string };
 type AuditRecord = { id: string; actor_id: string; action: string; target_table: string | null; target_id: string | null; metadata: Record<string, unknown>; created_at: string };
@@ -208,7 +208,7 @@ function AdminContent() {
             {unavailable("evidence")}
             {snapshot.evidence && snapshot.evidence.length === 0 && <p className="portal-muted">{t("noAdminRecords")}</p>}
             {snapshot.evidence?.map((item) => <article className="admin-record admin-evidence" key={item.id}>
-              <div><strong>{item.planting_date} · {item.project_id}</strong><span>{item.latitude}, {item.longitude} · {item.agent_id}</span>{item.notes && <p>{item.notes}</p>}<div className="admin-files">{item.files.map((file) => <a key={file.path} href={file.signedUrl} target="_blank" rel="noreferrer">{t("signedFiles")}</a>)}</div></div>
+              <div><strong>{item.project_id}</strong><span>{localDate(item.created_at, language)} · {item.submitted_by ?? "—"}</span><a className="admin-private-file" href={item.signedUrl} target="_blank" rel="noreferrer">{t("signedFiles")}</a></div>
               <div className="admin-action-group"><label>{t("treesVerified")}<input className="admin-input" type="number" min="1" step="1" value={treeCounts[item.id] ?? ""} onChange={(event) => setTreeCounts((current) => ({ ...current, [item.id]: event.target.value }))} /></label><button className="admin-action" disabled={workingId === item.id || Number(treeCounts[item.id]) < 1} onClick={() => void mutate(item.id, "/admin/evidence", "POST", { evidenceId: item.id, decision: "verified", treesVerified: Number(treeCounts[item.id]) })}>{t("approve")}</button><button className="admin-action admin-action-danger" disabled={workingId === item.id} onClick={() => void mutate(item.id, "/admin/evidence", "POST", { evidenceId: item.id, decision: "rejected" })}>{t("reject")}</button></div>
             </article>)}
           </section>

@@ -29,15 +29,15 @@ No wallet or Founder identity receives a role automatically. Admin role
 changes, review decisions, and course/project mutations append audit records.
 
 ## Audit trail guarantee
-Every evidence submission and admin/reviewer decision calls
-`writeAuditLog()` in the same request as the state-changing update, recording
-actor, action, target, and relevant metadata. `audit_logs` has no
-update/delete endpoint anywhere in this backend, matching the append-only RLS
-policy in `celoht-supabase`.
+Successful KYC/admin decisions call `writeAuditLog()` in the same request as
+the state-changing update, recording actor, action, target, and relevant
+metadata. `audit_logs` has no update/delete endpoint anywhere in this backend,
+matching the append-only RLS policy in `celoht-supabase`. Agent evidence
+submission currently returns 503 and creates no audit or evidence record.
 
-## Deployment verification
-`celoht-supabase/STORAGE.md` currently documents the reforestation evidence
-object prefix as `{project_id}/...`, while the backend workflow and its
-validation use `{agents.id}/...`. Verify the deployed storage policies and
-upload client agree before enabling that workflow; do not weaken the path
-check to work around a policy mismatch.
+## Evidence upload blocker
+The canonical reforestation evidence object prefix is `{project_id}/...` and
+the backend validates that prefix. However, the canonical storage migration
+currently grants writes to `reforestation-evidence` only to reviewers/admins,
+and the DApp has no evidence uploader. Do not enable agent evidence submission
+until a reviewed upload path and matching private-bucket policy are deployed.

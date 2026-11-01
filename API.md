@@ -47,7 +47,7 @@ Errors also return the same `requestId` in the `x-request-id` response header.
 | GET | `/transactions` | none | Indexed on-chain events (optionally filter by `wallet`) |
 | GET | `/reforestation` | none | Published projects, confirmed contribution records, and verified planting reports |
 | GET | `/reforestation/evidence` | none | Verified planting reports without private file paths |
-| POST | `/reforestation/evidence` | approved agent session | Submit planting date, coordinates, notes, and private storage paths for review |
+| POST | `/reforestation/evidence` | unavailable | Returns 503 until a secure agent-owned upload path is deployed |
 | GET | `/reforestation/contributions` | session | Caller's indexed contributions whose transactions are confirmed |
 | POST | `/reforestation/contributions` | session | Check a Celo Sepolia receipt and match it to the caller's indexed contribution |
 | GET | `/governance` | none | Official Celo Sepolia contract proposals, exact results/windows, confirmed activity, and optional wallet vote/fee state |
@@ -75,6 +75,10 @@ The browser interface is served at `/governance`.
 | POST | `/admin/projects` | admin | Create a project as draft by default |
 | PATCH | `/admin/projects` | admin | Edit project content or publication status |
 | GET | `/admin/audit-logs` | admin | Read audit trail (no write endpoint exists) |
+
+The canonical evidence database stores one private `storage_path` and does not
+store planting date, coordinates, or notes. Agent submission is disabled until
+a matching private-storage policy and owner-bound upload client are deployed.
 
 The `/profile` interface composes authenticated profile, learning progress,
 agent status, confirmed contributions, wallet activity, and governance data.

@@ -3,6 +3,8 @@ import { apiOk, withApiErrorHandling } from "@/lib/errors";
 import { getServiceRoleClient } from "@/lib/supabase/server";
 import { PaginationSchema } from "@/schemas/pagination";
 
+const CELO_SEPOLIA_CHAIN_ID = 11142220;
+
 /**
  * Public read of indexed on-chain transactions. This route is read-only —
  * the backend never writes to blockchain_transactions; only celoht-indexer
@@ -18,6 +20,8 @@ export async function GET(req: NextRequest) {
     let query = supabase
       .from("blockchain_transactions")
       .select("id, chain_id, contract_address, transaction_hash, event_name, block_number, confirmed, created_at")
+      .eq("chain_id", CELO_SEPOLIA_CHAIN_ID)
+      .eq("confirmed", true)
       .order("block_number", { ascending: false })
       .range(offset, offset + limit - 1);
 

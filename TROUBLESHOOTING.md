@@ -5,10 +5,11 @@
 Read the response's `error.details` for missing or invalid variable names and
 dependency statuses. Check Render logs for `health.configuration_invalid` or
 `health.dependency_unavailable`; diagnostics never include secret values.
-Production requires valid Supabase credentials, `CELO_CHAIN_ID=11142220`, a
+Production requires valid credentials for the canonical Supabase project
+`cncplsjsqsxuespnacoa`, `CELO_CHAIN_ID=11142220`, a
 Celo Sepolia `CELO_RPC_URL`, `AUTH_SESSION_SECRET`, both Upstash REST variables,
 and `CELOHT_ALLOWED_ORIGIN=https://app.celoht.com`. Confirm that the Supabase
-`profiles` table is readable using the service-role key. The response's safe
+`profiles` table is readable using the server-side service key. The response's safe
 `diagnostics.database` code distinguishes table/schema, permission, credential,
 and query failures; raw Supabase messages are not returned or logged. The probe
 is read-only and does not require a separate `system_health` table.

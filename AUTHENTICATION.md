@@ -58,10 +58,13 @@ unauthenticated and unauthorized requests use 401 and 403.
 ## Deployment requirements
 - Apply `Celo-HaiTi/celoht-supabase/0013_auth_challenges.sql`; this backend does
   not define a duplicate auth table migration.
-- Configure server-side `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, and a
-  random `AUTH_SESSION_SECRET` with at least 32 characters.
+- Configure the canonical `SUPABASE_URL`, one of `SUPABASE_ANON_KEY` or
+  `SUPABASE_PUBLISHABLE_KEY`, one of `SUPABASE_SERVICE_ROLE_KEY` or
+  `SUPABASE_SECRET_KEY`, and a random `AUTH_SESSION_SECRET` with at least 32
+  characters. The modern aliases are supported by the installed Supabase JS
+  client; never expose either server-key variable to browser code.
 - Keep `CELO_NETWORK=celoSepolia` and `CELO_CHAIN_ID=11142220` for the pilot.
 - In production, configure both Upstash REST variables for shared auth rate
   limiting and allow `https://app.celoht.com` in `CELOHT_ALLOWED_ORIGIN`.
 - The frontend must send credentialed requests. Never expose the service-role
-  key or session secret in a browser bundle.
+  or secret key or session secret in a browser bundle.

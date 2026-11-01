@@ -31,6 +31,7 @@ describe("requireActor session authorization", () => {
       SUPABASE_URL: "https://example.supabase.co",
       SUPABASE_ANON_KEY: "anon-key",
       SUPABASE_SERVICE_ROLE_KEY: "service-role-key",
+      CELO_NETWORK: "celoSepolia",
       CELO_CHAIN_ID: "11142220",
       CELO_RPC_URL: "https://rpc.example.com",
       AUTH_SESSION_SECRET: "0123456789abcdef".repeat(4),
@@ -72,6 +73,13 @@ describe("requireActor session authorization", () => {
     const token = issueSessionToken("profile-1", walletAddress);
 
     await expect(requireActor(requestWithToken(token))).rejects.toBeInstanceOf(AuthError);
+  });
+
+  it("revokes a valid session when its profile no longer exists", async () => {
+    maybeSingleMock.mockResolvedValue({ data: null, error: null });
+    const token = issueSessionToken("profile-1", walletAddress);
+
+    await expect(requireActor(requestWithToken(token))).rejects.toMatchObject({ code: "unauthenticated" });
   });
 
   it("rejects missing and malformed session cookies without querying profiles", async () => {

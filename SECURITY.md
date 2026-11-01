@@ -1,7 +1,7 @@
 # SECURITY.md
 
 ## Non-negotiables
-- `SUPABASE_SERVICE_ROLE_KEY` lives only in server environment variables,
+- `SUPABASE_SERVICE_ROLE_KEY` or `SUPABASE_SECRET_KEY` lives only in server environment variables,
   read only from `src/lib/supabase/server.ts`, which is `import "server-only"`
   guarded. It is never referenced in any `NEXT_PUBLIC_*` variable.
 - No private key or seed phrase is ever requested, accepted, or stored.
@@ -22,7 +22,9 @@ that as a 503, never as a cue to serve mock data.
 See `AUTHENTICATION.md`. Summarized: single-use, expiring, server-stored
 nonces prevent replay; HMAC-signed session tokens with `timingSafeEqual`
 comparison prevent tampering; per-wallet rate limiting on both nonce
-issuance and verification blunts brute-force/spam.
+issuance and verification blunts brute-force/spam. Unsafe browser API methods
+also reject an `Origin` that differs from the configured app origin; CORS
+headers alone are not treated as CSRF protection.
 
 ## Dependency hygiene
 CI runs `npm audit` on every push (see `.github/workflows/ci.yml`); high or

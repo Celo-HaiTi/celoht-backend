@@ -1,2 +1,2 @@
-export { GET } from "../../../../route (11)";
+export { GET } from "../../../../route";
 export const dynamic = "force-dynamic";

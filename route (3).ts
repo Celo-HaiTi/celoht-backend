@@ -4,6 +4,7 @@ import { requireActor, requireRole } from "@/lib/auth/authorization";
 import { getServiceRoleClient } from "@/lib/supabase/server";
 import { KycDecisionSchema } from "@/schemas/agents";
 import { writeAuditLog } from "@/lib/audit";
+import { isOwnedStoragePath } from "@/lib/storage/path";
 
 /** Reviewer/admin: list pending KYC submissions. */
 export async function GET(req: NextRequest) {
@@ -20,7 +21,7 @@ export async function GET(req: NextRequest) {
     if (error) throw error;
 
     const queue = await Promise.all((data ?? []).map(async (item) => {
-      if (!item.storage_path.startsWith(`${item.agent_id}/`) || item.storage_path.split("/").some((part: string) => part === "..") || item.storage_path.includes("\\")) {
+      if (!isOwnedStoragePath(item.storage_path, item.agent_id)) {
         throw new Error("KYC document path violates its agent ownership prefix.");
       }
       const { data: file, error: signingError } = await supabase.storage
@@ -73,18 +74,16 @@ export async function POST(req: NextRequest) {
       metadata: { decision: body.decision },
     });
 
-    // Reflect an approval into the agent's off-chain status.
-    if (body.decision === "approved") {
-      await supabase
-        .from("agents")
-        .update({ off_chain_kyc_status: "approved", reviewed_by: actor.profileId, reviewed_at: new Date().toISOString() })
-        .eq("id", data.agent_id);
-    } else {
-      await supabase
-        .from("agents")
-        .update({ off_chain_kyc_status: "rejected", reviewed_by: actor.profileId, reviewed_at: new Date().toISOString() })
-        .eq("id", data.agent_id);
-    }
+    // Reflect the KYC decision in the agent's off-chain status.
+    const { error: agentStatusError } = await supabase
+      .from("agents")
+      .update({
+        off_chain_kyc_status: body.decision === "approved" ? "approved" : "rejected",
+        reviewed_by: actor.profileId,
+        reviewed_at: new Date().toISOString(),
+      })
+      .eq("id", data.agent_id);
+    if (agentStatusError) throw agentStatusError;
 
     return apiOk(data);
   });

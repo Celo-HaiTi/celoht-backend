@@ -4,6 +4,7 @@ import { requireActor, requireRole } from "@/lib/auth/authorization";
 import { getServiceRoleClient } from "@/lib/supabase/server";
 import { EvidenceDecisionSchema } from "@/schemas/reforestation";
 import { writeAuditLog } from "@/lib/audit";
+import { isOwnedStoragePath } from "@/lib/storage/path";
 
 /** Reviewer/admin queue. File access is short-lived and never public. */
 export async function GET(req: NextRequest) {
@@ -13,32 +14,27 @@ export async function GET(req: NextRequest) {
     const supabase = getServiceRoleClient();
     const { data: evidence, error } = await supabase
       .from("reforestation_evidence")
-      .select("id, project_id, agent_id, planting_date, latitude, longitude, notes, storage_paths, status")
+      .select("id, project_id, submitted_by, storage_path, trees_verified, status, created_at")
       .eq("status", "pending")
       .order("created_at", { ascending: true });
     if (error) throw error;
 
     const queue = await Promise.all((evidence ?? []).map(async (item) => {
-      const signedFiles = await Promise.all((item.storage_paths ?? []).map(async (path: string) => {
-        if (!path.startsWith(`${item.agent_id}/`) || path.split("/").some((part) => part === "..") || path.includes("\\")) {
-          throw new Error("Stored evidence path violates its agent ownership prefix.");
-        }
-        const { data, error: signingError } = await supabase.storage
-          .from("reforestation-evidence")
-          .createSignedUrl(path, 300);
-        if (signingError) throw signingError;
-        return { path, signedUrl: data.signedUrl };
-      }));
+      if (!isOwnedStoragePath(item.storage_path, item.project_id)) {
+        throw new Error("Stored evidence path violates its project ownership prefix.");
+      }
+      const { data: file, error: signingError } = await supabase.storage
+        .from("reforestation-evidence")
+        .createSignedUrl(item.storage_path, 300);
+      if (signingError) throw signingError;
       return {
         id: item.id,
         project_id: item.project_id,
-        agent_id: item.agent_id,
-        planting_date: item.planting_date,
-        latitude: item.latitude,
-        longitude: item.longitude,
-        notes: item.notes,
+        submitted_by: item.submitted_by,
+        trees_verified: item.trees_verified,
         status: item.status,
-        files: signedFiles,
+        created_at: item.created_at,
+        signedUrl: file.signedUrl,
       };
     }));
 
@@ -58,6 +54,19 @@ export async function POST(req: NextRequest) {
     const body = EvidenceDecisionSchema.parse(await req.json());
 
     const supabase = getServiceRoleClient();
+    const { data: existing, error: existingError } = await supabase
+      .from("reforestation_evidence")
+      .select("id, submitted_by, status")
+      .eq("id", body.evidenceId)
+      .maybeSingle();
+    if (existingError) throw existingError;
+    if (!existing || existing.status !== "pending") {
+      return apiError("conflict", "Planting evidence has already been reviewed or does not exist.");
+    }
+    if (existing.submitted_by === actor.profileId) {
+      return apiError("unauthorized", "Reviewers cannot review their own planting evidence.");
+    }
+
     const { data, error } = await supabase
       .from("reforestation_evidence")
       .update({

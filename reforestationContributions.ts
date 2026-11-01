@@ -57,26 +57,37 @@ export async function GET(req: NextRequest) {
   return withApiErrorHandling(async () => {
     const actor = await requireActor(req);
     const { limit, offset } = PaginationSchema.parse(Object.fromEntries(new URL(req.url).searchParams));
-    const { data, error } = await getServiceRoleClient()
+    const supabase = getServiceRoleClient();
+    const { data, error } = await supabase
       .from("reforestation_contributions")
-      .select("project_id, amount, asset_address, transaction_hash, created_at")
-      .ilike("wallet_address", actor.walletAddress)
+      .select("project_id, blockchain_transaction_id, amount, asset_address, created_at")
+      .ilike("contributor_wallet_address", actor.walletAddress)
       .order("created_at", { ascending: false })
       .range(offset, offset + limit - 1);
     if (error) throw error;
 
     const contributions = data ?? [];
-    const transactionHashes = contributions.map((contribution) => contribution.transaction_hash);
-    if (transactionHashes.length === 0) return apiOk([]);
+    const transactionIds = contributions.map((contribution) => contribution.blockchain_transaction_id);
+    if (transactionIds.length === 0) return apiOk([]);
 
-    const { data: confirmedTransactions, error: transactionError } = await getServiceRoleClient()
+    const { data: confirmedTransactions, error: transactionError } = await supabase
       .from("blockchain_transactions")
-      .select("transaction_hash")
-      .in("transaction_hash", transactionHashes)
+      .select("id, transaction_hash")
+      .in("id", transactionIds)
+      .eq("chain_id", CELO_SEPOLIA_CHAIN_ID)
       .eq("confirmed", true);
     if (transactionError) throw transactionError;
-    const confirmedHashes = new Set((confirmedTransactions ?? []).map((transaction) => transaction.transaction_hash.toLowerCase()));
-    return apiOk(contributions.filter((contribution) => confirmedHashes.has(contribution.transaction_hash.toLowerCase())));
+    const confirmedHashes = new Map((confirmedTransactions ?? []).map((transaction) => [transaction.id, transaction.transaction_hash]));
+    return apiOk(contributions.flatMap((contribution) => {
+      const transactionHash = confirmedHashes.get(contribution.blockchain_transaction_id);
+      return transactionHash ? [{
+        project_id: contribution.project_id,
+        amount: contribution.amount,
+        asset_address: contribution.asset_address,
+        transaction_hash: transactionHash,
+        created_at: contribution.created_at,
+      }] : [];
+    }));
   });
 }
 
@@ -113,7 +124,8 @@ export async function POST(req: NextRequest) {
 
     const { data: indexedTransaction, error: transactionError } = await supabase
       .from("blockchain_transactions")
-      .select("transaction_hash")
+      .select("id")
+      .eq("chain_id", CELO_SEPOLIA_CHAIN_ID)
       .eq("transaction_hash", body.transactionHash.toLowerCase())
       .eq("confirmed", true)
       .maybeSingle();
@@ -124,16 +136,23 @@ export async function POST(req: NextRequest) {
 
     const { data, error } = await supabase
       .from("reforestation_contributions")
-      .select("project_id, amount, asset_address, transaction_hash, wallet_address")
+      .select("project_id, amount, asset_address, contributor_wallet_address, created_at")
       .eq("project_id", body.projectId)
-      .eq("transaction_hash", body.transactionHash.toLowerCase())
-      .ilike("wallet_address", actor.walletAddress)
+      .eq("blockchain_transaction_id", indexedTransaction.id)
+      .ilike("contributor_wallet_address", actor.walletAddress)
       .maybeSingle();
     if (error) throw error;
     if (!data) {
       return apiOk({ transactionHash: body.transactionHash, status: "confirmed_waiting_for_contribution_event" }, 202);
     }
 
-    return apiOk({ ...data, status: "confirmed" });
+    return apiOk({
+      project_id: data.project_id,
+      amount: data.amount,
+      asset_address: data.asset_address,
+      transaction_hash: body.transactionHash,
+      created_at: data.created_at,
+      status: "confirmed",
+    });
   });
 }

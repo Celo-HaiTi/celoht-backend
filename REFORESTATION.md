@@ -14,10 +14,11 @@ project record. Register Léogâne project details in the canonical database.
   `trees_verified`; no financial amount is converted into trees or other
   environmental impact.
 - `GET /api/v1/reforestation/evidence` exposes verified report metadata only.
-  It never returns file paths or signed URLs.
+   It never returns file paths or signed URLs. The canonical table has no
+   structured planting date, coordinate, or notes columns.
 - `GET /api/v1/agents/reforestation/evidence` returns only the authenticated
-   agent's own reports, including `pending`, `verified`, or `rejected` status;
-   private file paths are omitted.
+   agent's own reports, scoped by `submitted_by`, including `pending`,
+   `verified`, or `rejected` status; private file paths are omitted.
 - `GET /api/v1/reforestation/contributions` requires a wallet session and
   returns only the caller's indexed contributions whose
   `blockchain_transactions.confirmed` value is true.
@@ -37,43 +38,51 @@ contract calls. Never request or transmit a private key to this API.
 
 ## Planting evidence workflow
 
-1. An agent with the `agent` role and approved `off_chain_kyc_status` uploads
-   photographs and supporting documents to the private
-   `reforestation-evidence` Supabase Storage bucket.
-2. The agent calls `POST /api/v1/reforestation/evidence` with `projectId`, an
-   ISO calendar `plantingDate`, `latitude`, `longitude`, optional `notes`, and
-   one or more uploaded `storagePaths`.
-3. The API requires every object path to start with that agent's
-   `<agents.id>/` prefix, checks that the private objects can be signed, and
-   creates a `pending` report. The submission is audit logged.
-4. A reviewer or admin reads `GET /api/v1/admin/evidence`, which returns the
-   pending queue with file URLs expiring after five minutes.
-5. The reviewer/admin posts `{ evidenceId, decision, treesVerified? }` to
-   `/api/v1/admin/evidence`. Approval requires a positive `treesVerified`
-   value. Only a still-pending report can be decided. Both outcomes are
-   audit logged and cannot be overwritten through this API.
-6. Public endpoints include only `verified` reports. Pending reports remain
-   pending, rejected reports remain rejected, and neither contributes to
-   verified impact metrics.
+The canonical backend evidence row stores `project_id`, one `storage_path`,
+`submitted_by`, and verification state. It cannot persist planting date,
+coordinates, notes, or multiple paths. Public routes expose verified counts
+and timestamps only.
+
+**Pilot blocker:** `POST /api/v1/reforestation/evidence` returns 503. Canonical
+Supabase migration 0007 permits `reforestation-evidence` object writes only to
+reviewers/admins, and the DApp repository contains no agent evidence uploader.
+The reviewer queue still signs project-prefixed private objects already present
+in the canonical table. Do not weaken owner checks or mark evidence as uploaded
+to work around this.
+
+There is a separate canonical RLS issue: migration 0021 grants the
+`authenticated` role insert access to `project_id`, `storage_path`, and
+`submitted_by`, and its policy checks submitter identity and published project
+only. It does not require an approved agent or verify that the referenced
+private object belongs to that submitter. The backend's 503 does not block
+direct Data API inserts. A reviewed Supabase migration must restrict this
+policy/grant and bind upload ownership before evidence intake can be enabled.
+
+Migration 0021 defines append-only `reforestation_evidence_reviews` with a
+database trigger that updates evidence and writes the audit record. The current
+backend decision route still uses a pending-state compare-and-set plus
+`audit_logs` directly; this is not equivalent to the canonical review-history
+transaction and must be reconciled before claiming the complete review audit
+workflow. Its review trigger also needs a concurrency guard to prevent two
+simultaneous review inserts from overwriting one pending decision.
 
 ## Supabase deployment prerequisites
 
 This backend repository does not contain the canonical Supabase migrations or
-Storage policies. Before enabling the routes, deploy and verify the matching
-schema and policies in `celoht-supabase`:
+Storage policies. Deploy and verify the matching schema and policies in
+`celoht-supabase`:
 
-- Create `reforestation-evidence` as a **private** bucket. Its upload policy
-  must bind the authenticated uploader to an approved agent profile and
-   restrict object names to that agent's `<agents.id>/` prefix. Deny object
-   updates/overwrites after upload. Do not grant public read access. The
-   service role is used only server-side for temporary reviewer URLs.
-- Ensure `reforestation_evidence` supports `agent_id`, `project_id`,
-  `planting_date`, `latitude`, `longitude`, `notes`, `storage_paths`,
-  `trees_verified`, `status`, `verified_by`, and `verified_at`; allow statuses
-  `pending`, `verified`, and `rejected`.
-- Ensure `reforestation_contributions` exposes `project_id`, `wallet_address`,
-  `amount`, `asset_address`, `transaction_hash`, and `created_at`; the
-  indexer remains its sole writer.
+- Keep `reforestation-evidence` **private**. Migration 0007 currently grants
+   object writes to reviewer/admin roles only. Any agent upload policy or
+   service-issued upload URL requires an explicitly reviewed change in the
+   Supabase/DApp repositories.
+- The canonical `reforestation_evidence` table stores `project_id`,
+   `storage_path`, `submitted_by`, `trees_verified`, `status`, `verified_by`,
+   and `verified_at`; it does not store structured planting metadata.
+- The canonical `reforestation_contributions` table exposes
+   `blockchain_transaction_id`, `project_id`, `contributor_wallet_address`,
+   `amount`, and `asset_address`. Join the hash and confirmation state from
+   `blockchain_transactions`; the indexer remains the sole writer.
 - Ensure `blockchain_transactions` records the same `transaction_hash` and
   only marks transactions `confirmed` at the deployment's configured
   confirmation depth.

@@ -114,13 +114,15 @@ export async function consumeChallenge(walletAddress: string, nonce: string): Pr
   // Mark used. A unique partial index / check in the migration should make
   // double-consumption impossible even under a race; this update is scoped
   // to used_at IS NULL to enforce it here too.
+  const consumedAt = new Date().toISOString();
   const { data: updated, error: updateError } = await supabase
     .from("auth_challenges")
-    .update({ used_at: new Date().toISOString() })
+    .update({ used_at: consumedAt })
     .eq("id", data.id)
     .is("used_at", null)
+    .gt("expires_at", consumedAt)
     .select("id");
 
   if (updateError) throw updateError;
-  if (!updated?.length) throw new ChallengeError("Challenge was already consumed concurrently.");
+  if (!updated?.length) throw new ChallengeError("Challenge expired or was already consumed.");
 }

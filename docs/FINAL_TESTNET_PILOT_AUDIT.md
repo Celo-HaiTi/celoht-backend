@@ -52,20 +52,23 @@ development-tooling advisories only; their production-only audits pass.
 
 ### High pilot blockers (functional/security boundary)
 
-**P1 — Production backend is not healthy.** `https://api.celoht.com/api/v1/health`
-returned 503 during the audit. Safe diagnostics report the database as
-`unavailable` (`query_failed`); Sepolia RPC and rate-limit store reported
-healthy. Authentication, profile, admin, and durable application workflows
-cannot be certified while the deployed database dependency is failing.
+**P1 — Live API deployment has route and domain failures.** The Render service
+health endpoint returned HTTP 200 on 2026-11-01 with database, Sepolia RPC, and
+rate-limit dependencies healthy. However, `api.celoht.com` fails TLS,
+`GET /api/v1/certificates` is misrouted to public governance data, and
+`GET /api/v1/reforestation/evidence` returns HTTP 500. A healthy dependency
+probe does not certify every route or canonical schema integration.
 
-**P1 — Evidence upload has no complete agent path.** The backend evidence route
-accepts previously uploaded storage paths, but the DApp contains no evidence
-upload client and the backend has no signed upload endpoint. Supabase
-`0007_storage.sql` permits reforestation-evidence inserts only for
-reviewer/admin roles. Separately, `STORAGE.md` documents
-`{project_id}/{filename}`, while the backend validates `{agents.id}/` paths.
-Confirm one canonical convention, authorize agent uploads through a constrained
-server-issued signed upload URL, and test ownership/path denial end-to-end.
+**P1 — Evidence upload has no complete agent path.** The backend now returns
+503 from agent evidence submission. The DApp contains no evidence upload client,
+and Supabase `0007_storage.sql` permits reforestation-evidence writes only for
+reviewer/admin roles. The backend now follows the canonical project-ID prefix,
+but there is no owner-bound upload capability or structured planting metadata
+in the canonical evidence table. Migration 0021 also permits authenticated
+users to insert evidence rows without requiring agent approval or validating
+object ownership; the disabled backend route does not block direct Data API
+inserts. Fix the grant/RLS, deploy a reviewed upload policy/client, and define
+supported evidence metadata before enabling submission.
 
 **P1 — Notifications are not a durable cross-repository feature.** Supabase
 contains notification tables and RLS, but the backend exposes no `/notifications`

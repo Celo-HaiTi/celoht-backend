@@ -14,6 +14,30 @@ export function proxy(request: NextRequest) {
     corsHeaders.vary = "Origin";
   }
 
+  if (
+    origin &&
+    allowedOrigin &&
+    origin !== allowedOrigin &&
+    ["POST", "PUT", "PATCH", "DELETE"].includes(request.method)
+  ) {
+    const response = NextResponse.json(
+      {
+        error: {
+          code: "unauthorized",
+          message: "Cross-origin requests are not allowed.",
+          details: null,
+          requestId,
+        },
+      },
+      { status: 403, headers: { "x-request-id": requestId } }
+    );
+    response.headers.set("x-content-type-options", "nosniff");
+    response.headers.set("x-frame-options", "DENY");
+    response.headers.set("referrer-policy", "no-referrer");
+    response.headers.set("cache-control", "no-store");
+    return response;
+  }
+
   if (request.method === "OPTIONS") {
     return new NextResponse(null, { status: 204, headers: corsHeaders });
   }

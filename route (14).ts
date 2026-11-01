@@ -3,6 +3,8 @@ import { apiOk, withApiErrorHandling } from "@/lib/errors";
 import { getServiceRoleClient } from "@/lib/supabase/server";
 import { PaginationSchema } from "@/schemas/pagination";
 
+const CELO_SEPOLIA_CHAIN_ID = 11142220;
+
 /** Public project records and independently sourced financial and planting metrics. */
 export async function GET(req: NextRequest) {
   return withApiErrorHandling(async () => {
@@ -24,11 +26,11 @@ export async function GET(req: NextRequest) {
         const [contributionResult, evidenceResult] = await Promise.all([
           supabase
             .from("reforestation_contributions")
-            .select("amount, asset_address, transaction_hash")
+            .select("blockchain_transaction_id, amount, asset_address, created_at")
             .eq("project_id", project.id),
           supabase
             .from("reforestation_evidence")
-            .select("trees_verified, planting_date, latitude, longitude, verified_at")
+            .select("id, project_id, trees_verified, verified_at, created_at")
             .eq("project_id", project.id)
             .eq("status", "verified"),
         ]);
@@ -36,17 +38,24 @@ export async function GET(req: NextRequest) {
         if (evidenceResult.error) throw evidenceResult.error;
 
         const contributionRows = contributionResult.data ?? [];
-        const transactionHashes = contributionRows.map((contribution) => contribution.transaction_hash);
-        let contributions = contributionRows;
-        if (transactionHashes.length > 0) {
+        const transactionIds = contributionRows.map((contribution) => contribution.blockchain_transaction_id);
+        let contributions: typeof contributionRows = [];
+        if (transactionIds.length > 0) {
           const { data: confirmedTransactions, error: transactionError } = await supabase
             .from("blockchain_transactions")
-            .select("transaction_hash")
-            .in("transaction_hash", transactionHashes)
+            .select("id, transaction_hash")
+            .in("id", transactionIds)
+            .eq("chain_id", CELO_SEPOLIA_CHAIN_ID)
             .eq("confirmed", true);
           if (transactionError) throw transactionError;
-          const confirmedHashes = new Set((confirmedTransactions ?? []).map((transaction) => transaction.transaction_hash.toLowerCase()));
-          contributions = contributionRows.filter((contribution) => confirmedHashes.has(contribution.transaction_hash.toLowerCase()));
+          const transactionHashes = new Map((confirmedTransactions ?? []).map((transaction) => [transaction.id, transaction.transaction_hash]));
+          contributions = contributionRows.flatMap((contribution) => {
+            const transactionHash = transactionHashes.get(contribution.blockchain_transaction_id);
+            return transactionHash ? [{
+              ...contribution,
+              transaction_hash: transactionHash,
+            }] : [];
+          });
         }
         const evidence = evidenceResult.data ?? [];
 
@@ -56,7 +65,13 @@ export async function GET(req: NextRequest) {
           confirmedContributionCount: contributions?.length ?? 0,
           financialContributionCount: contributions?.length ?? 0,
           contributions: contributions ?? [],
-          plantingReports: evidence ?? [],
+          plantingReports: (evidence ?? []).map((report) => ({
+            id: report.id,
+            project_id: report.project_id,
+            trees_verified: report.trees_verified,
+            verified_at: report.verified_at,
+            created_at: report.created_at,
+          })),
           verifiedTreesPlanted: (evidence ?? []).reduce((sum, e) => sum + (e.trees_verified ?? 0), 0),
         };
       })

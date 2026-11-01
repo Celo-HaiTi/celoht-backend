@@ -49,13 +49,17 @@ The checked-in code does not appear to include fake production data paths. The f
 
 - Missing configuration throws `ConfigurationError` and routes return `503`.
 - The `server-only.ts` file is a test-support no-op guard, not production data.
-- Placeholder values in CI are purely to satisfy build-time environment requirements; they are not production credentials.
+- CI builds without integration credentials; unit-test mocks are isolated to test
+  files and are not production data paths. Build success does not certify live
+  Supabase, RPC, storage, or rate-limit readiness.
 
 ## Dependencies
 
 Required external dependencies for a real deployment include:
 
-- Supabase project (`SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`)
+- Supabase project `cncplsjsqsxuespnacoa` (`SUPABASE_URL`, either
+  `SUPABASE_ANON_KEY` or `SUPABASE_PUBLISHABLE_KEY`, and either
+  `SUPABASE_SERVICE_ROLE_KEY` or `SUPABASE_SECRET_KEY`)
 - Celo Sepolia RPC endpoint (`CELO_RPC_URL`)
 - Session secret (`AUTH_SESSION_SECRET`)
 - Canonical CeloHT sibling repositories, especially:
@@ -65,7 +69,10 @@ Required external dependencies for a real deployment include:
   - `celoht-governance`
   - `celoht-smart-contracts`
 
-The sibling repositories are not checked out locally, but their canonical public artifacts were inspected. Live application connectivity remains unverified.
+Sibling repositories were inspected read-only through their public canonical
+artifacts. Live Render health, public routes, and the Sepolia RPC were also
+checked; private Supabase project settings, RLS behavior, and authenticated live
+workflows remain unverified.
 
 ## Security
 
@@ -92,7 +99,9 @@ The repository contains deployment configuration and health handling for a singl
 - `DEPLOYMENT.md` documents required environment values and build/run order.
 - `GET /api/v1/health` checks production configuration, read-only Supabase access, the Celo Sepolia chain ID, and the production rate-limit store.
 
-Current deployment status cannot be verified beyond repository configuration because live environment variables and external service deployments are not present in this workspace.
+The public Render hostname currently responds, but the canonical API hostname
+fails TLS and individual route failures remain. This worktree is uncommitted and
+has not been deployed; see `PRODUCTION_READINESS.md` for current evidence.
 
 ## Documentation
 

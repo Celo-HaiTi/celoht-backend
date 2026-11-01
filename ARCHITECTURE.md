@@ -12,11 +12,11 @@ celoht-dapp -> celoht-backend -> Supabase (Auth, Postgres, Storage)
 ```
 
 ## Stack
-Next.js 14 (App Router, Route Handlers), TypeScript strict mode, Zod
+Next.js 16 (App Router, Route Handlers), TypeScript strict mode, Zod
 validation, `@supabase/supabase-js`, `viem` for signature verification.
 
 ## Request lifecycle
-1. Route handler under `src/app/api/v1/**/route.ts` parses/validates input with Zod.
+1. Route handler under `app/api/v1/**/route.ts` parses/validates input with Zod.
 2. `requireActor()` resolves the session (if the route needs auth) and re-reads
    the role from `profiles.role` — never from the token's own claims.
 3. `requireRole()` enforces authorization for admin/reviewer-only routes.

@@ -2,7 +2,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   ContributionReceiptSchema,
   EvidenceDecisionSchema,
-  PlantingEvidenceSubmissionSchema,
 } from "./reforestation";
 import { verifySepoliaReceipt } from "./reforestationContributions";
 import { POST as submitEvidence } from "./route (15)";
@@ -56,16 +55,10 @@ describe("reforestation schemas", () => {
     }).success).toBe(true);
   });
 
-  it("rejects invalid coordinates, future planting dates, and malformed transaction references", () => {
-    expect(PlantingEvidenceSubmissionSchema.safeParse({
-      projectId: "2a2a2a2a-2a2a-42a2-82a2-2a2a2a2a2a2a",
-      plantingDate: "2099-01-01",
-      latitude: 91,
-      longitude: -72,
-      storagePaths: ["agent/file.jpg"],
-    }).success).toBe(false);
+  it("rejects malformed transaction references", () => {
+    const projectId = "2a2a2a2a-2a2a-42a2-82a2-2a2a2a2a2a2a";
     expect(ContributionReceiptSchema.safeParse({
-      projectId: "2a2a2a2a-2a2a-42a2-82a2-2a2a2a2a2a2a",
+      projectId,
       transactionHash: "0x1234",
     }).success).toBe(false);
   });
@@ -87,16 +80,13 @@ describe("reforestation access control", () => {
 
   afterEach(() => vi.clearAllMocks());
 
-  it("prevents a regular user from submitting planting evidence", async () => {
-    const request = new Request("https://backend.example/api/v1/reforestation/evidence", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({}),
-    });
+  it("fails closed when agent evidence uploads are not configured", async () => {
+    const response = await submitEvidence();
+    const body = await response.json();
 
-    const response = await submitEvidence(request as never);
-
-    expect(response.status).toBe(403);
+    expect(response.status).toBe(503);
+    expect(body.error.code).toBe("service_unavailable");
+    expect(routeMocks.requireActor).not.toHaveBeenCalled();
     expect(routeMocks.getServiceRoleClient).not.toHaveBeenCalled();
   });
 

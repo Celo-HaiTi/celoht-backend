@@ -61,8 +61,8 @@ audit behavior, reviewer signed KYC access, and locale completeness. Live
 Supabase role/RLS/storage policies, Celo Sepolia, and production health
 dependencies still require deployment verification.
 
-There is a cross-repository storage convention discrepancy for planting
-evidence: `celoht-supabase/STORAGE.md` documents `{project_id}/...`, while the
-backend route and `REFORESTATION.md` validate `{agents.id}/...`. Confirm the
-deployed migration and uploader agree before enabling evidence uploads; do
-not remove server-side path validation to mask this mismatch.
+The backend now follows the canonical `{project_id}/...` evidence object
+prefix. Agent uploads remain unavailable: the canonical storage migration
+grants evidence writes only to reviewers/admins, and the DApp has no uploader.
+Do not claim the evidence workflow works until a reviewed upload API/policy is
+deployed and tested end to end.

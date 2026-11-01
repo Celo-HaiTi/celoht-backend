@@ -104,11 +104,7 @@ paths:
       responses: { '200': { $ref: '#/components/responses/Success' } }
   /reforestation/evidence:
     get: { tags: [Reforestation], responses: { '200': { $ref: '#/components/responses/Success' } } }
-    post:
-      tags: [Reforestation]
-      security: [{ session: [] }]
-      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/PlantingEvidenceSubmission' } } } }
-      responses: { '201': { $ref: '#/components/responses/Success' }, '403': { $ref: '#/components/responses/Forbidden' } }
+    post: { tags: [Reforestation], security: [], responses: { '503': { $ref: '#/components/responses/Unavailable' } } }
   /reforestation/contributions:
     get: { tags: [Reforestation], security: [{ session: [] }], responses: { '200': { $ref: '#/components/responses/Success' } } }
     post:
@@ -157,7 +153,6 @@ components:
     ProfileUpdate: { type: object, properties: { displayName: { type: string, maxLength: 120 }, avatarUrl: { type: string, maxLength: 2048 } }, additionalProperties: false }
     KycSubmission: { type: object, required: [documentType, storagePath], properties: { documentType: { type: string, maxLength: 60 }, storagePath: { type: string } }, additionalProperties: false }
     ProgressUpdate: { type: object, required: [lessonId, completed], properties: { lessonId: { type: string, format: uuid }, completed: { type: boolean } }, additionalProperties: false }
-    PlantingEvidenceSubmission: { type: object, required: [projectId, plantingDate, latitude, longitude, storagePaths], properties: { projectId: { type: string, format: uuid }, plantingDate: { type: string, format: date }, latitude: { type: number, minimum: -90, maximum: 90 }, longitude: { type: number, minimum: -180, maximum: 180 }, notes: { type: string, maxLength: 4000 }, storagePaths: { type: array, minItems: 1, maxItems: 10, items: { type: string } } }, additionalProperties: false }
     ContributionReceipt: { type: object, required: [projectId, transactionHash], properties: { projectId: { type: string, format: uuid }, transactionHash: { type: string, pattern: '^0x[0-9a-fA-F]{64}$' } }, additionalProperties: false }
     Error: { type: object, required: [error], properties: { error: { type: object, required: [code, message, requestId], properties: { code: { type: string }, message: { type: string }, details: {}, requestId: { type: string, format: uuid } } } } }
   responses:

@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { apiError, apiOk, withApiErrorHandling } from "@/lib/errors";
 import { requireActor } from "@/lib/auth/authorization";
 import { getServiceRoleClient } from "@/lib/supabase/server";
+import { isOwnedStoragePath } from "@/lib/storage/path";
 import { z } from "zod";
 
 const SubmitKycSchema = z.object({
@@ -46,6 +47,16 @@ export async function POST(req: NextRequest) {
       .maybeSingle();
     if (agentError) throw agentError;
     if (!agent) return apiError("not_found", "No agent application on file.");
+    if (!isOwnedStoragePath(body.storagePath, agent.id)) {
+      return apiError("validation_error", "The KYC document path must be under the submitting agent's private folder.");
+    }
+
+    const { error: storageError } = await supabase.storage
+      .from("agent-kyc")
+      .createSignedUrl(body.storagePath, 60);
+    if (storageError) {
+      return apiError("validation_error", "The uploaded KYC document is unavailable in private storage.");
+    }
 
     const { data, error } = await supabase
       .from("agent_kyc")
@@ -59,11 +70,12 @@ export async function POST(req: NextRequest) {
     if (error) throw error;
 
     // Move the agent into kyc_review if this is the first submission in that state.
-    await supabase
+    const { error: statusError } = await supabase
       .from("agents")
       .update({ off_chain_kyc_status: "kyc_review" })
       .eq("id", agent.id)
       .eq("off_chain_kyc_status", "pending");
+    if (statusError) throw statusError;
 
     return apiOk(data, 201);
   });

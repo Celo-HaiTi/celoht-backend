@@ -7,6 +7,7 @@ beforeEach(() => {
   process.env.SUPABASE_URL = "https://example.supabase.co";
   process.env.SUPABASE_ANON_KEY = "anon";
   process.env.SUPABASE_SERVICE_ROLE_KEY = "service";
+  process.env.CELO_NETWORK = "celoSepolia";
   process.env.CELO_CHAIN_ID = "11142220";
   process.env.CELO_RPC_URL = "https://rpc.example.com";
   process.env.AUTH_SESSION_SECRET = "0123456789abcdef".repeat(4);

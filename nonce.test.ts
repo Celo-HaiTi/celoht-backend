@@ -20,6 +20,7 @@ describe("wallet challenge issuance", () => {
       SUPABASE_URL: "https://example.supabase.co",
       SUPABASE_ANON_KEY: "anon-key",
       SUPABASE_SERVICE_ROLE_KEY: "service-role-key",
+      CELO_NETWORK: "celoSepolia",
       CELO_CHAIN_ID: "11142220",
       CELO_RPC_URL: "https://rpc.example.com",
       AUTH_SESSION_SECRET: "0123456789abcdef".repeat(4),
@@ -77,6 +78,7 @@ describe("wallet challenge issuance", () => {
       maybeSingle: vi.fn(),
       update: vi.fn(),
       is: vi.fn(),
+      gt: vi.fn(),
     };
     query.select.mockReturnValue(query);
     query.eq.mockReturnValue(query);
@@ -85,12 +87,14 @@ describe("wallet challenge issuance", () => {
       error: null,
     });
     query.update.mockReturnValue(query);
-    query.is.mockReturnValue(finalUpdate);
+    query.is.mockReturnValue(query);
+    query.gt.mockReturnValue(finalUpdate);
     fromMock.mockReturnValue(query);
 
     await expect(consumeChallenge(`0x${"a".repeat(40)}`, "b".repeat(64))).rejects.toBeInstanceOf(ChallengeError);
 
     expect(query.update).toHaveBeenCalledWith(expect.objectContaining({ used_at: expect.any(String) }));
     expect(query.is).toHaveBeenCalledWith("used_at", null);
+    expect(query.gt).toHaveBeenCalledWith("expires_at", expect.any(String));
   });
 });
