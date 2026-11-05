@@ -53,11 +53,15 @@ export async function GET() {
     const supabase = getServiceRoleClient();
     const dependencies: Record<string, "healthy" | "unavailable"> = {
       database: "unavailable",
+      indexerData: "unavailable",
       celoSepoliaRpc: "unavailable",
       rateLimitStore: "unavailable",
     };
 
     const databaseCheck = Promise.resolve().then(() => supabase.from("profiles").select("id").limit(1));
+    const indexerDataCheck = Promise.resolve().then(() =>
+      supabase.from("blockchain_transactions").select("transaction_hash").limit(1)
+    );
     const rpcCheck = (async () => {
         const response = await fetch(config.CELO_RPC_URL, {
           method: "POST",
@@ -85,8 +89,9 @@ export async function GET() {
           const body = (await response.json()) as { result?: unknown; error?: unknown };
           return !body.error && body.result === "PONG";
     })();
-    const [databaseResult, rpcResult, rateLimitResult] = await Promise.allSettled([
+    const [databaseResult, indexerDataResult, rpcResult, rateLimitResult] = await Promise.allSettled([
       databaseCheck,
+      indexerDataCheck,
       rpcCheck,
       rateLimitCheck,
     ]);
@@ -101,6 +106,18 @@ export async function GET() {
       logger.error("health.dependency_unavailable", {
         component: "database",
         diagnosticCode: diagnostics.database,
+      });
+    }
+
+    const indexerDataError =
+      indexerDataResult.status === "fulfilled" ? indexerDataResult.value.error : indexerDataResult.reason;
+    if (indexerDataResult.status === "fulfilled" && !indexerDataResult.value.error) {
+      dependencies.indexerData = "healthy";
+    } else {
+      diagnostics.indexerData = getDatabaseDiagnosticCode(indexerDataError);
+      logger.error("health.dependency_unavailable", {
+        component: "indexerData",
+        diagnosticCode: diagnostics.indexerData,
       });
     }
 

@@ -92,7 +92,11 @@ operational status are read-only views there.
 ## Health
 | Method | Path | Auth | Description |
 |---|---|---|---|
-| GET | `/health` | none | 200 only if config, Supabase, Celo Sepolia RPC, and production rate-limit store are healthy; otherwise 503 |
+| GET | `/health` | none | 200 only if config, Supabase, the indexer-owned transaction table, Celo Sepolia RPC, and production rate-limit store are reachable; otherwise 503 |
+
+The `indexerData` check verifies that `blockchain_transactions` is queryable; it
+does not prove that the indexer is advancing or caught up. Verify sync progress
+from the indexer's canonical checkpoint/monitoring interface.
 
 The backend reads indexer-owned blockchain tables but never writes them. It
 does not expose transaction-signing or treasury private-key operations.

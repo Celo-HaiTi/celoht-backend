@@ -3,7 +3,9 @@
 ## Runtime checks
 
 - `/api/v1/health` is a readiness check: configuration must parse and the
-  service-role client must be able to read `profiles`.
+  service-role client must be able to read `profiles` and the indexer-owned
+  `blockchain_transactions` table. The indexer data check verifies table
+  availability only; it does not prove that synchronization is advancing.
 - The application process itself is the liveness check. Restart the process if
   liveness fails; do not use the readiness endpoint as a restart signal.
 - Every API response includes `x-request-id` on errors. Preserve it when

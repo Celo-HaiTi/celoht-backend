@@ -182,10 +182,27 @@ describe("GET /api/v1/health", () => {
     expect(response.status).toBe(200);
     expect(body.data.dependencies).toEqual({
       database: "healthy",
+      indexerData: "healthy",
       celoSepoliaRpc: "healthy",
       rateLimitStore: "healthy",
     });
     expect(fromMock).toHaveBeenCalledWith("profiles");
+    expect(fromMock).toHaveBeenCalledWith("blockchain_transactions");
+  });
+
+  it("returns 503 when the indexer-owned transaction table is unavailable", async () => {
+    fromMock.mockImplementation((table: string) =>
+      table === "blockchain_transactions"
+        ? { select: () => ({ limit: () => Promise.resolve({ error: { code: "PGRST205" } }) }) }
+        : { select: selectMock }
+    );
+
+    const response = await GET();
+    const body = await response.json();
+
+    expect(response.status).toBe(503);
+    expect(body.error.details.dependencies.indexerData).toBe("unavailable");
+    expect(body.error.details.diagnostics.indexerData).toBe("table_unavailable");
   });
 
   it("returns 503 when the production rate-limit store is unreachable", async () => {
@@ -213,6 +230,7 @@ describe("GET /api/v1/health", () => {
     expect(response.status).toBe(503);
     expect(body.error.details.dependencies).toEqual({
       database: "healthy",
+      indexerData: "healthy",
       celoSepoliaRpc: "healthy",
       rateLimitStore: "unavailable",
     });
